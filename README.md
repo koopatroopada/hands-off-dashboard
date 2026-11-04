@@ -107,8 +107,22 @@ server.js          零依赖 HTTP 服务
 lib/handoff.js     交接文档解析 + 项目发现
 config.json        根目录与项目清单
 start.bat          Windows 一键启动
+build-demo.js      把当前数据打包成静态快照（npm run build:demo）
 test/              node --test 单元测试（npm test）
 ```
+
+## 静态快照（demo/）
+
+`npm run build:demo` 会读一遍当前数据，产出 `demo/index.html`：把 `/api/projects` 与 `/api/handoff` 的返回值直接内嵌进页面，并在页面里用一个 fetch 拦截器顶替这两个接口。产物没有任何外部依赖，可以直接丢给静态托管，或者双击用浏览器打开。
+
+适合给别人看界面效果，代价要清楚：
+
+- 数据是**发布那一刻**的快照，之后改 md 不会反映到线上；要更新就重新跑一次 `npm run build:demo` 再发布。
+- 页面上的「刷新」和切窗自动重读只会重新读同一份快照。
+- 「定位文件」按钮在快照里被隐藏，因为它依赖本地服务。
+- 卡片数据里的「Data generated」时间是快照的生成时间，可以据此判断新鲜度。
+
+真正的日常使用仍然是 `start.bat` 起本地服务，数据实时、功能完整。
 
 ## 常见问题
 
