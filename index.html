@@ -920,164 +920,29 @@
       .project-title.is-scrolling .title-track { animation: none !important; }
     }
 
-    /* ── 数据源信息与刷新 ─────────────────────────────────────── */
-    .generated .source-line,
-    .generated .read-line { display: block; }
-    .generated .source-line { color: var(--meta); }
-    .generated strong { font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
-
-    .icon-refresh { --od-icon-size: 13px; }
-
-    .refresh-button {
+    /* ── 交接全文入口：沿用 footer 元信息的排版，不新增卡片行 ── */
+    .footer-doc {
       appearance: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 36px;
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--card);
-      color: var(--fg-2);
-      font-size: 12.5px;
-      font-weight: 500;
-      line-height: 1.2;
-      cursor: pointer;
-      white-space: nowrap;
-      transition:
-        background-color var(--motion-fast) var(--ease-standard),
-        border-color var(--motion-fast) var(--ease-standard);
-    }
-
-    .refresh-button:hover { background: var(--surface); border-color: var(--meta); }
-    .refresh-button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-    .refresh-button.is-busy { color: var(--muted); pointer-events: none; }
-    .refresh-button.is-busy .icon-refresh { animation: refresh-spin 900ms linear infinite; }
-
-    @keyframes refresh-spin { to { transform: rotate(360deg); } }
-
-    /* ── 卡片补充区 ──────────────────────────────────────────── */
-    .board.is-sparse { grid-auto-columns: minmax(280px, 1fr); }
-    .board.is-sparse .why { min-height: 0; max-height: 5.6em; }
-    .board.is-sparse .why-toggle { top: calc(5.6em - 28px); }
-
-    .doc-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      min-width: 0;
-    }
-
-    .doc-link {
-      appearance: none;
-      display: inline-flex;
-      align-items: center;
-      flex: 0 0 auto;
-      padding: 5px 9px;
-      border: 1px solid var(--control-border);
-      border-radius: 8px;
-      background: var(--control-surface);
-      color: var(--fg-2);
-      font-size: 11.5px;
-      font-weight: 500;
-      line-height: 1.3;
-      cursor: pointer;
-      white-space: nowrap;
-      transition:
-        background-color var(--motion-fast) var(--ease-standard),
-        border-color var(--motion-fast) var(--ease-standard),
-        color var(--motion-fast) var(--ease-standard);
-    }
-
-    .doc-link:hover { background: var(--bg); border-color: var(--border); color: var(--fg); }
-    .doc-link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-
-    .doc-path {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-family: var(--font-mono);
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
       font-size: 10.5px;
-      color: var(--meta);
-    }
-
-    .blocker {
-      display: flex;
-      align-items: flex-start;
-      gap: 6px;
-      margin-top: 8px;
-      padding: 7px 9px;
-      border: 1px solid #f2d9d4;
-      border-radius: 8px;
-      background: #fdf4f2;
-      color: #8b4038;
-      font-size: 12px;
       line-height: 1.5;
-    }
-
-    .blocker .od-icon { flex: 0 0 auto; margin-top: 2px; --od-icon-size: 14px; }
-    .blocker-text { min-width: 0; overflow-wrap: anywhere; }
-
-    .card-error-title {
-      font-family: var(--font-display-ui);
-      font-size: 20px;
-      font-weight: 600;
-      line-height: 1.25;
-      letter-spacing: -0.02em;
-      color: var(--fg);
-    }
-
-    .card-error-copy { margin-top: 8px; font-size: 12.5px; line-height: 1.6; color: var(--danger); overflow-wrap: anywhere; }
-    .card-error-hint { margin-top: 10px; font-size: 12px; line-height: 1.6; color: var(--muted); }
-
-    /* ── 状态卡 ─────────────────────────────────────────────── */
-    .state-card {
-      width: min(100%, 460px);
-      padding: 40px 34px;
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      background: var(--card);
-      box-shadow: var(--card-shadow);
-      text-align: center;
-    }
-
-    .spinner {
-      display: block;
-      width: 22px;
-      height: 22px;
-      margin: 0 auto 18px;
-      border: 2px solid var(--border-soft);
-      border-top-color: var(--navy);
-      border-radius: 50%;
-      animation: refresh-spin 800ms linear infinite;
-    }
-
-    .state-hint { margin-top: 12px; font-size: 12px; line-height: 1.7; color: var(--muted); }
-    .state-hint code {
-      font-family: var(--font-mono);
-      background: var(--surface);
-      border: 1px solid var(--border-soft);
-      border-radius: 6px;
-      padding: 1px 5px;
-    }
-
-    .state-button {
-      appearance: none;
-      margin-top: 16px;
-      padding: 9px 18px;
-      border: 1px solid var(--navy);
-      border-radius: 10px;
-      background: var(--navy);
-      color: var(--accent-on);
-      font-size: 13px;
-      font-weight: 500;
+      color: var(--muted);
       cursor: pointer;
+      white-space: nowrap;
+      text-decoration: underline;
+      text-decoration-color: var(--border);
+      text-underline-offset: 2px;
     }
 
-    .state-button:hover { background: var(--navy-hover); }
-    .state-button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .footer-doc:hover { color: var(--navy); text-decoration-color: currentColor; }
+    .footer-doc:focus-visible {
+      outline: none;
+      border-radius: 3px;
+      box-shadow: var(--focus-ring);
+    }
 
     /* ── 全文抽屉 ───────────────────────────────────────────── */
     .drawer { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; }
@@ -1299,40 +1164,13 @@
       .drawer-body { padding: 2px 16px 40px; }
       .drawer-title { font-size: 20px; }
       .drawer-reveal { display: none; }
-      .blocker { font-size: 11.5px; }
-      .toolbar { flex-wrap: wrap; }
-      .toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
-      .count-pill { align-self: flex-start; margin-left: 0; }
-      .board-panel { padding: 8px; }
-      .board-scroller { overflow-x: hidden; overflow-y: auto; touch-action: auto; }
-      .board,
-      .board.is-sparse {
-        display: flex;
-        flex-direction: column;
-        height: auto;
-        width: 100%;
-        min-width: 0;
-        gap: 12px;
-      }
-      .board .project,
-      .board.is-sparse .project {
-        height: auto;
-        min-height: 0;
-        min-width: 0;
-        max-width: 100%;
-        overflow: visible;
-        touch-action: auto;
-      }
-      .project-title { white-space: normal; }
-      .doc-row { flex-wrap: wrap; }
-      .doc-path { white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
     }
   </style>
 </head>
 <body>
   <div class="stage">
     <div class="app-shell">
-      <header class="app-header" aria-label="项目看板头部与工具栏">
+      <header class="app-header" aria-label="Hands-off Dashboard header and toolbar">
         <div class="header-top">
           <div class="identity">
             <span class="brandmark" aria-hidden="true">
@@ -1345,35 +1183,27 @@
             </span>
             <div class="title-block">
               <h1 class="app-title">Hands-off Dashboard</h1>
-              <p class="subtitle">只显示带交接文档的项目 · 直接读取本地文件</p>
+              <p class="subtitle">Only projects with a handoff · Sort by created or last activity</p>
             </div>
           </div>
 
           <div class="generated">
-            <span class="source-line">数据源 <strong id="rootPath">—</strong></span>
-            <span class="read-line">读取于 <strong><time id="readTime">—</time></strong></span>
+            Data generated <strong><time id="readTime" datetime="">—</time></strong>
           </div>
         </div>
 
         <div class="toolbar">
           <div class="controls" id="controls">
-            <span class="toolbar-label">排序</span>
-            <div class="segmented" role="group" aria-label="排序方式">
-              <button class="sort-button" type="button" data-sort="created" aria-pressed="true">创建时间</button>
-              <button class="sort-button" type="button" data-sort="lastActivity" aria-pressed="false">最近活动</button>
+            <span class="toolbar-label">Sort</span>
+            <div class="segmented" role="group" aria-label="Sort by">
+              <button class="sort-button" type="button" data-sort="created" aria-pressed="true">Created</button>
+              <button class="sort-button" type="button" data-sort="lastActivity" aria-pressed="false">Last activity</button>
             </div>
-            <button class="direction-button" id="directionButton" type="button" aria-label="当前倒序，点击切换为正序">
+            <button class="direction-button" id="directionButton" type="button" aria-label="Sorted descending. Switch to ascending.">
               <svg class="od-icon icon-arrow sort-arrow" id="sortArrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M8 3v10M4.5 9.5 8 13l3.5-3.5" />
               </svg>
-              <span id="directionLabel">倒序</span>
-            </button>
-            <button class="refresh-button" id="refreshButton" type="button" aria-label="重新读取交接文档" title="重新读取交接文档">
-              <svg class="od-icon icon-refresh" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M13 4.4A5.4 5.4 0 1 0 13.4 9" />
-                <path d="M13.2 1.8v2.9h-2.9" />
-              </svg>
-              <span>刷新</span>
+              <span id="directionLabel">Descending</span>
             </button>
           </div>
 
@@ -1387,12 +1217,12 @@
             class="board-scroller"
             id="boardScroller"
             role="region"
-            aria-label="项目列表，可横向滚动"
+            aria-label="Project list, horizontally scrollable"
             tabindex="0"
           >
             <div class="board" id="board"></div>
             <noscript>
-              <p class="no-script">请启用 JavaScript 后查看项目看板。</p>
+              <p class="no-script">Enable JavaScript to view the project board.</p>
             </noscript>
           </div>
         </div>
@@ -1405,13 +1235,13 @@
     <div class="drawer-panel" id="drawerPanel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
       <header class="drawer-head">
         <div class="drawer-heading">
-          <p class="drawer-kicker" id="drawerKicker">交接文档</p>
+          <p class="drawer-kicker" id="drawerKicker">Handoff</p>
           <h2 class="drawer-title" id="drawerTitle">—</h2>
           <p class="drawer-path" id="drawerPath"></p>
         </div>
         <div class="drawer-actions">
-          <button class="drawer-reveal" id="drawerReveal" type="button" title="在资源管理器中定位该文件">定位文件</button>
-          <button class="drawer-close" id="drawerClose" type="button" aria-label="关闭全文">
+          <button class="drawer-reveal" id="drawerReveal" type="button" title="Show this file in Explorer">Reveal file</button>
+          <button class="drawer-close" id="drawerClose" type="button" aria-label="Close handoff">
             <svg class="od-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M4 4l8 8M12 4l-8 8" />
             </svg>
@@ -1427,19 +1257,17 @@
   <script>
     'use strict';
 
-    const PIN_KEY = 'project-board:pinned:v2';
+    const PIN_STORAGE_KEY = 'project-board:pinned:v1';
     const API_PROJECTS = '/api/projects';
 
     const els = {
       board: document.getElementById('board'),
-      scroller: document.getElementById('boardScroller'),
-      count: document.getElementById('projectCount'),
+      boardScroller: document.getElementById('boardScroller'),
+      projectCount: document.getElementById('projectCount'),
       controls: document.getElementById('controls'),
       directionButton: document.getElementById('directionButton'),
       directionLabel: document.getElementById('directionLabel'),
       sortArrow: document.getElementById('sortArrow'),
-      refreshButton: document.getElementById('refreshButton'),
-      rootPath: document.getElementById('rootPath'),
       readTime: document.getElementById('readTime'),
       status: document.getElementById('status'),
       drawer: document.getElementById('drawer'),
@@ -1459,7 +1287,6 @@
       pinned: loadPinned(),
       loading: true,
       error: null,
-      root: '',
       readAt: null,
       drawerId: null,
       lastFocus: null,
@@ -1469,14 +1296,23 @@
     let twoFingerGesture = null;
     let suppressClickUntil = 0;
 
-    /* ── 本地偏好 ─────────────────────────────────────────────── */
+    /* ── Local preferences ───────────────────────────────────── */
 
     function loadPinned() {
+      let stored = null;
       try {
-        const stored = window.localStorage.getItem(PIN_KEY);
-        if (!stored) return new Set();
+        stored = window.localStorage.getItem(PIN_STORAGE_KEY);
+      } catch (error) {
+        stored = null;
+      }
+
+      if (stored === null) {
+        return new Set();
+      }
+
+      try {
         const parsed = JSON.parse(stored);
-        return new Set(Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : []);
+        return new Set(Array.isArray(parsed) ? parsed : []);
       } catch (error) {
         return new Set();
       }
@@ -1484,13 +1320,13 @@
 
     function savePinned() {
       try {
-        window.localStorage.setItem(PIN_KEY, JSON.stringify([...state.pinned]));
+        window.localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify([...state.pinned]));
       } catch (error) {
-        // 内存里的 Set 仍然能让本次交互生效。
+        // The in-memory Set still keeps the current interaction working.
       }
     }
 
-    /* ── 基础工具 ─────────────────────────────────────────────── */
+    /* ── Helpers ─────────────────────────────────────────────── */
 
     function escapeHtml(value) {
       return String(value ?? '').replace(/[&<>"']/g, (character) => ({
@@ -1508,10 +1344,16 @@
       return Number.isNaN(timestamp) ? null : timestamp;
     }
 
-    function formatClock(date) {
-      if (!date) return '—';
-      const pad = (number) => String(number).padStart(2, '0');
-      return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    function pad(number) {
+      return String(number).padStart(2, '0');
+    }
+
+    function stampValue(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function stampLabel(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
     function currentStageIndex(project) {
@@ -1526,7 +1368,7 @@
       return `${index + 1}/${total}`;
     }
 
-    /* ── 图标 ─────────────────────────────────────────────────── */
+    /* ── Icons ───────────────────────────────────────────────── */
 
     function pinIcon() {
       return `
@@ -1548,9 +1390,9 @@
     function warningIcon() {
       return `
         <svg class="od-icon icon-warning" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M10 2.8 18 17H2z" />
-          <path d="M10 8v3.6" />
-          <path d="M10 14.4h.01" />
+          <circle cx="10" cy="10" r="7.2" />
+          <path d="M10 6.2v4.4" />
+          <path d="M10 13.6h.01" />
         </svg>
       `;
     }
@@ -1563,7 +1405,7 @@
       `;
     }
 
-    /* ── 数据 ─────────────────────────────────────────────────── */
+    /* ── Data ────────────────────────────────────────────────── */
 
     async function loadProjects({ silent = false } = {}) {
       if (!silent) {
@@ -1571,32 +1413,26 @@
         render();
       }
 
-      els.refreshButton.classList.add('is-busy');
-      els.refreshButton.setAttribute('aria-busy', 'true');
-
       try {
         const response = await fetch(API_PROJECTS, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`接口返回 HTTP ${response.status}`);
+        if (!response.ok) throw new Error(`Request failed with HTTP ${response.status}`);
         const payload = await response.json();
 
         state.projects = Array.isArray(payload.projects) ? payload.projects : [];
-        state.root = payload.root || '';
         state.readAt = new Date();
         state.error = null;
       } catch (error) {
         state.projects = [];
         state.error =
           error instanceof TypeError
-            ? '没有连上本地服务（fetch 失败）。'
+            ? 'The local service did not respond. Start it with start.bat, then reload this page.'
             : error.message || String(error);
       } finally {
         state.loading = false;
-        els.refreshButton.classList.remove('is-busy');
-        els.refreshButton.removeAttribute('aria-busy');
         render();
         els.status.textContent = state.error
-          ? '读取失败'
-          : `已读取 ${state.projects.length} 个项目`;
+          ? 'Read failed'
+          : `Loaded ${state.projects.length} ${state.projects.length === 1 ? 'project' : 'projects'}`;
 
         const requestedDoc = new URLSearchParams(window.location.search).get('doc');
         if (!state.error && requestedDoc && !state.drawerId) {
@@ -1610,6 +1446,7 @@
       if (state.emptyPreview) return [];
 
       return [...state.projects].sort((a, b) => {
+        // Cards that failed to load stay at the end.
         if (Boolean(a.error) !== Boolean(b.error)) return a.error ? 1 : -1;
 
         const aPinned = state.pinned.has(a.id);
@@ -1620,7 +1457,7 @@
         const bDate = dateValue(b[state.sortField]);
 
         if (aDate === null && bDate === null) {
-          return String(a.name).localeCompare(String(b.name), 'zh-CN');
+          return a.name.localeCompare(b.name, 'zh-CN');
         }
         if (aDate === null) return 1;
         if (bDate === null) return -1;
@@ -1630,11 +1467,11 @@
       });
     }
 
-    /* ── 卡片 ─────────────────────────────────────────────────── */
+    /* ── Card ────────────────────────────────────────────────── */
 
     function progressMarkup(project) {
       if (!project.current) {
-        return `<p class="stage-name placeholder" aria-label="阶段未记录">阶段未记录</p>`;
+        return `<p class="stage-name placeholder" aria-label="Stage not defined">Stage not defined</p>`;
       }
 
       const count = stageProgress(project);
@@ -1648,39 +1485,28 @@
     }
 
     function nextMarkup(project) {
-      const gateMarkup = project.gate
-        ? `<p class="gate" title="${escapeHtml(project.gate)}" lang="zh-CN">${escapeHtml(project.gate)}</p>`
-        : '';
-
       if (project.nextDetermined === false) {
         return `
-          ${gateMarkup}
           <div class="undetermined">
             ${warningIcon()}
-            <span>下一步未定</span>
+            <span>Next step undecided</span>
           </div>
         `;
       }
 
+      const gateMarkup = project.gate
+        ? `<p class="gate" title="${escapeHtml(project.gate)}" lang="zh-CN">${escapeHtml(project.gate)}</p>`
+        : '';
+
       if (!project.next) {
-        return `${gateMarkup}<p class="next-action is-placeholder"><span class="action-text">下一步未记录</span></p>`;
+        return `${gateMarkup}<p class="next-action is-placeholder"><span class="action-text">Next step not defined</span></p>`;
       }
 
       return `
         ${gateMarkup}
         <div class="next-action">
-          ${gateMarkup ? arrowIcon() : ''}
+          ${project.gate ? arrowIcon() : ''}
           <span class="action-text" title="${escapeHtml(project.next)}" lang="zh-CN">${escapeHtml(project.next)}</span>
-        </div>
-      `;
-    }
-
-    function blockerMarkup(project) {
-      if (!project.blocker) return '';
-      return `
-        <div class="blocker">
-          ${warningIcon()}
-          <span class="blocker-text" title="${escapeHtml(project.blocker)}" lang="zh-CN">${escapeHtml(project.blocker)}</span>
         </div>
       `;
     }
@@ -1688,27 +1514,37 @@
     function footerMarkup(project) {
       const hasLast = Boolean(project.lastActivity);
       const hasCreated = Boolean(project.created);
+      const parts = [];
 
       if (!hasLast && !hasCreated) {
-        return `<span class="time-item placeholder">日期未记录</span>`;
+        parts.push(`<span class="time-item placeholder">Dates not recorded</span>`);
+      } else {
+        const last = hasLast
+          ? `<span class="time-item">Last activity <time datetime="${escapeHtml(project.lastActivity)}">${escapeHtml(project.lastActivity)}</time></span>`
+          : `<span class="time-item placeholder">Last activity not recorded</span>`;
+        const created = hasCreated
+          ? `<span class="time-item">Created <time datetime="${escapeHtml(project.created)}">${escapeHtml(project.created)}</time></span>`
+          : `<span class="time-item placeholder">Created not recorded</span>`;
+
+        parts.push(last, `<span class="footer-sep" aria-hidden="true">·</span>`, created);
       }
 
-      const last = hasLast
-        ? `<span class="time-item">最近活动 <time datetime="${escapeHtml(project.lastActivity)}">${escapeHtml(project.lastActivity)}</time></span>`
-        : `<span class="time-item placeholder">最近活动未记录</span>`;
+      if (project.handoff) {
+        const label = `${project.handoff.relPath} · click to read the full handoff`;
+        parts.push(
+          `<span class="footer-sep" aria-hidden="true">·</span>`,
+          `<button class="footer-doc" type="button" data-doc-id="${escapeHtml(project.id)}" title="${escapeHtml(label)}">Handoff</button>`
+        );
+      }
 
-      const created = hasCreated
-        ? `<span class="time-item">创建 <time datetime="${escapeHtml(project.created)}">${escapeHtml(project.created)}</time></span>`
-        : `<span class="time-item placeholder">创建日期未记录</span>`;
-
-      return `${last}<span class="footer-sep" aria-hidden="true">·</span>${created}`;
+      return parts.join('');
     }
 
     function projectMarkup(project) {
       if (project.error) return errorCardMarkup(project);
 
       const isPinned = state.pinned.has(project.id);
-      const pinLabel = isPinned ? `取消置顶 ${project.name}` : `置顶 ${project.name}`;
+      const pinLabel = isPinned ? `Unpin ${project.name}` : `Pin ${project.name}`;
       const titleId = `project-title-${project.id}`;
       const whyId = `why-${project.id}`;
       const titleMarkup = `
@@ -1725,8 +1561,8 @@
             hidden
             aria-expanded="false"
             aria-controls="${whyId}"
-            aria-label="展开为什么做"
-            title="展开为什么做"
+            aria-label="Show full why"
+            title="Show full why"
           >
             ${chevronIcon()}
           </button>
@@ -1739,16 +1575,11 @@
             ${whyToggle}
           </div>
         `
-        : `<p class="why placeholder">没写为什么做</p>`;
+        : `<p class="why placeholder">Why not provided</p>`;
 
       const evidenceMarkup = project.evidence
         ? `<p class="evidence" title="${escapeHtml(project.evidence)}" lang="zh-CN">${escapeHtml(project.evidence)}</p>`
-        : `<p class="evidence placeholder">还没有可验证的证据</p>`;
-
-      const relPath = project.handoff ? project.handoff.relPath : '交接文档';
-      const docTitle = project.handoff
-        ? `${project.handoff.relPath} · ${Math.round(project.handoff.bytes / 102.4) / 10} KB`
-        : '';
+        : `<p class="evidence placeholder">No evidence recorded</p>`;
 
       return `
         <article class="project" aria-labelledby="${titleId}">
@@ -1766,25 +1597,17 @@
             </button>
           </div>
 
-          <div class="doc-row">
-            <button class="doc-link" type="button" data-doc-id="${escapeHtml(project.id)}" aria-label="查看 ${escapeHtml(project.name)} 的交接全文">
-              查看全文
-            </button>
-            <span class="doc-path" title="${escapeHtml(docTitle)}">${escapeHtml(relPath)}</span>
-          </div>
-
           ${whyMarkup}
 
-          <section class="block" aria-label="当前阶段">
-            <p class="block-label">当前阶段</p>
+          <section class="block" aria-label="Stage progress">
+            <p class="block-label">Stage</p>
             ${progressMarkup(project)}
             ${evidenceMarkup}
           </section>
 
-          <section class="block" aria-label="下一步">
-            <p class="block-label">下一步</p>
+          <section class="block" aria-label="Next step">
+            <p class="block-label">Next step</p>
             ${nextMarkup(project)}
-            ${blockerMarkup(project)}
           </section>
 
           <footer class="project-footer">
@@ -1794,43 +1617,38 @@
       `;
     }
 
+    /** 读不到交接文档时，仍然用同一套卡片骨架，只是字段都是占位。 */
     function errorCardMarkup(project) {
       return `
-        <article class="project is-error">
-          <h2 class="card-error-title" lang="zh-CN">${escapeHtml(project.name)}</h2>
-          <p class="card-error-copy" lang="zh-CN">${escapeHtml(project.error)}</p>
-          <p class="card-error-hint">检查 config.json 里这个项目的 handoff 路径，或在项目目录下放一份 HANDOFF.md，然后点刷新。</p>
-        </article>
-      `;
-    }
-
-    function loadingMarkup() {
-      return `
-        <div class="state-card">
-          <span class="spinner" aria-hidden="true"></span>
-          <h2 class="empty-title">正在读取交接文档…</h2>
-          <p class="empty-copy">扫描根目录下的项目文件夹，解析每份交接文档的头部。</p>
-        </div>
-      `;
-    }
-
-    function errorMarkup(message) {
-      return `
-        <div class="state-card">
-          <div class="empty-mark" aria-hidden="true">
-            ${warningIcon()}
+        <article class="project">
+          <div class="project-head">
+            <h2 class="project-title" title="${escapeHtml(project.name)}" lang="zh-CN">
+              <span class="title-track"><span class="title-text">${escapeHtml(project.name)}</span></span>
+            </h2>
           </div>
-          <h2 class="empty-title">没连上本地服务</h2>
-          <p class="empty-copy">${escapeHtml(message)}</p>
-          <p class="state-hint">双击项目里的 <code>start.bat</code> 启动服务，再访问 <code>http://127.0.0.1:4177</code>。</p>
-          <button class="state-button" id="retryButton" type="button">重试</button>
-        </div>
+          <p class="why placeholder">Why not provided</p>
+          <section class="block" aria-label="Stage progress">
+            <p class="block-label">Stage</p>
+            <p class="stage-name placeholder">Stage not defined</p>
+            <p class="evidence placeholder">No evidence recorded</p>
+          </section>
+          <section class="block" aria-label="Next step">
+            <p class="block-label">Next step</p>
+            <div class="undetermined" title="${escapeHtml(project.error)}">
+              ${warningIcon()}
+              <span>${escapeHtml(project.error)}</span>
+            </div>
+          </section>
+          <footer class="project-footer">
+            <span class="time-item placeholder">Dates not recorded</span>
+          </footer>
+        </article>
       `;
     }
 
     function emptyMarkup() {
       return `
-        <div class="state-card">
+        <div class="empty-state">
           <div class="empty-mark" aria-hidden="true">
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M8 3.5h8l4 4v17H8z" />
@@ -1838,13 +1656,41 @@
               <path d="M11 13h6M11 17h4" />
             </svg>
           </div>
-          <h2 class="empty-title">还没有可展示的项目</h2>
-          <p class="empty-copy">根目录下没有找到带交接文档的项目。每个项目目录里放一份 HANDOFF.md 或 handoff-*.md 就会被读到。</p>
+          <h2 class="empty-title">No projects to show</h2>
+          <p class="empty-copy">No project folders with a readable handoff were found. Folders without a handoff are not shown.</p>
         </div>
       `;
     }
 
-    /* ── 渲染 ─────────────────────────────────────────────────── */
+    function loadingMarkup() {
+      return `
+        <div class="empty-state">
+          <div class="empty-mark" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3.5h8l4 4v17H8z" />
+              <path d="M16 3.5v4h4" />
+              <path d="M11 13h6M11 17h4" />
+            </svg>
+          </div>
+          <h2 class="empty-title">Reading handoffs</h2>
+          <p class="empty-copy">Scanning project folders and parsing the structured header of each handoff.</p>
+        </div>
+      `;
+    }
+
+    function errorMarkup(message) {
+      return `
+        <div class="empty-state">
+          <div class="empty-mark" aria-hidden="true">
+            ${warningIcon()}
+          </div>
+          <h2 class="empty-title">No data from the local service</h2>
+          <p class="empty-copy">${escapeHtml(message)}</p>
+        </div>
+      `;
+    }
+
+    /* ── Render ──────────────────────────────────────────────── */
 
     function updateControls() {
       document.querySelectorAll('.sort-button').forEach((button) => {
@@ -1853,11 +1699,13 @@
       });
 
       const isAscending = state.direction === 'asc';
-      els.directionLabel.textContent = isAscending ? '正序' : '倒序';
+      els.directionLabel.textContent = isAscending ? 'Ascending' : 'Descending';
       els.sortArrow.classList.toggle('is-ascending', isAscending);
       els.directionButton.setAttribute(
         'aria-label',
-        isAscending ? '当前正序，点击切换为倒序' : '当前倒序，点击切换为正序'
+        isAscending
+          ? 'Sorted ascending. Switch to descending.'
+          : 'Sorted descending. Switch to ascending.'
       );
     }
 
@@ -1897,23 +1745,23 @@
     }
 
     function render() {
-      els.rootPath.textContent = state.root || '—';
-      els.readTime.textContent = formatClock(state.readAt);
+      if (state.readAt) {
+        els.readTime.textContent = stampLabel(state.readAt);
+        els.readTime.setAttribute('datetime', stampValue(state.readAt));
+      }
 
       if (state.loading) {
-        els.count.textContent = '读取中';
+        els.projectCount.textContent = 'Reading…';
         els.controls.hidden = true;
         els.board.classList.add('is-empty');
-        els.board.classList.remove('is-sparse');
         els.board.innerHTML = loadingMarkup();
         return;
       }
 
       if (state.error) {
-        els.count.textContent = '读取失败';
+        els.projectCount.textContent = 'Read failed';
         els.controls.hidden = true;
         els.board.classList.add('is-empty');
-        els.board.classList.remove('is-sparse');
         els.board.innerHTML = errorMarkup(state.error);
         return;
       }
@@ -1921,10 +1769,9 @@
       const projects = sortedProjects();
       const isEmpty = projects.length === 0;
 
-      els.count.textContent = `${projects.length} 个项目`;
+      els.projectCount.textContent = `${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`;
       els.controls.hidden = isEmpty;
       els.board.classList.toggle('is-empty', isEmpty);
-      els.board.classList.toggle('is-sparse', !isEmpty && projects.length <= 3);
       els.board.innerHTML = isEmpty ? emptyMarkup() : projects.map(projectMarkup).join('');
       updateControls();
       window.requestAnimationFrame(setupCardOverflow);
@@ -1937,7 +1784,7 @@
       });
     }
 
-    /* ── 交接全文抽屉 ─────────────────────────────────────────── */
+    /* ── Handoff drawer ──────────────────────────────────────── */
 
     function inlineMarkup(text) {
       let output = escapeHtml(text);
@@ -2134,10 +1981,10 @@
 
       els.drawerKicker.textContent = project.handoff && project.handoff.title
         ? project.handoff.title
-        : '交接文档';
+        : 'Handoff';
       els.drawerTitle.textContent = project.name;
-      els.drawerPath.textContent = project.handoff ? `${project.handoff.relPath}` : '';
-      els.drawerBody.innerHTML = '<p class="drawer-hint">读取中…</p>';
+      els.drawerPath.textContent = project.handoff ? project.handoff.relPath : '';
+      els.drawerBody.innerHTML = '<p class="drawer-hint">Reading…</p>';
       els.drawerReveal.hidden = !project.handoff;
 
       els.drawer.hidden = false;
@@ -2149,14 +1996,14 @@
         const response = await fetch(`/api/handoff?id=${encodeURIComponent(projectId)}`, {
           cache: 'no-store'
         });
-        if (!response.ok) throw new Error(`接口返回 HTTP ${response.status}`);
+        if (!response.ok) throw new Error(`Request failed with HTTP ${response.status}`);
         const data = await response.json();
         if (state.drawerId !== projectId) return;
         els.drawerBody.innerHTML = renderMarkdown(data.markdown || '');
         els.drawerBody.scrollTop = 0;
       } catch (error) {
         if (state.drawerId !== projectId) return;
-        els.drawerBody.innerHTML = `<p class="drawer-hint">读取失败：${escapeHtml(error.message)}</p>`;
+        els.drawerBody.innerHTML = `<p class="drawer-hint">Could not read this file: ${escapeHtml(error.message)}</p>`;
       }
     }
 
@@ -2176,7 +2023,7 @@
       state.lastFocus = null;
     }
 
-    /* ── 交互 ─────────────────────────────────────────────────── */
+    /* ── Interaction ─────────────────────────────────────────── */
 
     els.board.addEventListener('click', (event) => {
       if (Date.now() < suppressClickUntil) {
@@ -2184,14 +2031,9 @@
         return;
       }
 
-      if (event.target.closest('#retryButton')) {
-        loadProjects();
-        return;
-      }
-
-      const docLink = event.target.closest('.doc-link');
-      if (docLink) {
-        openDrawer(docLink.dataset.docId);
+      const docButton = event.target.closest('.footer-doc');
+      if (docButton) {
+        openDrawer(docButton.dataset.docId);
         return;
       }
 
@@ -2202,7 +2044,7 @@
 
         const expanded = whyToggle.getAttribute('aria-expanded') === 'true';
         const nextExpanded = !expanded;
-        const nextLabel = nextExpanded ? '收起' : '展开为什么做';
+        const nextLabel = nextExpanded ? 'Show less' : 'Show full why';
 
         why.classList.toggle('is-expanded', nextExpanded);
         whyToggle.setAttribute('aria-expanded', String(nextExpanded));
@@ -2228,7 +2070,7 @@
       savePinned();
       render();
       focusPin(projectId);
-      els.status.textContent = `${wasPinned ? '已取消置顶' : '已置顶'} ${project.name}`;
+      els.status.textContent = `${wasPinned ? 'Unpinned' : 'Pinned'} ${project.name}`;
     });
 
     document.querySelectorAll('.sort-button').forEach((button) => {
@@ -2237,18 +2079,14 @@
         if (state.sortField === nextField) return;
         state.sortField = nextField;
         render();
-        els.status.textContent = `按${nextField === 'created' ? '创建时间' : '最近活动'}排序，${state.direction === 'asc' ? '正序' : '倒序'}`;
+        els.status.textContent = `Sorted by ${nextField === 'created' ? 'created' : 'last activity'}, ${state.direction === 'asc' ? 'ascending' : 'descending'}`;
       });
     });
 
     els.directionButton.addEventListener('click', () => {
       state.direction = state.direction === 'asc' ? 'desc' : 'asc';
       render();
-      els.status.textContent = `按${state.sortField === 'created' ? '创建时间' : '最近活动'}排序，${state.direction === 'asc' ? '正序' : '倒序'}`;
-    });
-
-    els.refreshButton.addEventListener('click', () => {
-      loadProjects({ silent: true });
+      els.status.textContent = `Sorted by ${state.sortField === 'created' ? 'created' : 'last activity'}, ${state.direction === 'asc' ? 'ascending' : 'descending'}`;
     });
 
     document.addEventListener('keydown', (event) => {
@@ -2257,23 +2095,18 @@
 
     els.drawerScrim.addEventListener('click', closeDrawer);
     els.drawerClose.addEventListener('click', closeDrawer);
-
     els.drawerReveal.addEventListener('click', async () => {
-      if (!state.drawerId) return;
-      els.drawerReveal.disabled = true;
+      const project = state.projects.find((item) => item.id === state.drawerId);
+      if (!project || !project.handoff) return;
       try {
-        await fetch(`/api/reveal?id=${encodeURIComponent(state.drawerId)}&target=handoff`);
-      } finally {
-        window.setTimeout(() => {
-          els.drawerReveal.disabled = false;
-        }, 600);
+        await fetch(`/api/reveal?id=${encodeURIComponent(project.id)}`, { method: 'POST' });
+      } catch (error) {
+        els.status.textContent = 'Could not open the file location';
       }
     });
 
-    els.scroller.addEventListener('wheel', (event) => {
+    els.boardScroller.addEventListener('wheel', (event) => {
       if (event.ctrlKey) return;
-      // 窄屏堆叠布局下没有横向溢出，别拦滚轮，否则整页滚不动。
-      if (els.scroller.scrollWidth <= els.scroller.clientWidth + 1) return;
       if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
 
       const card = event.target.closest('.project');
@@ -2290,17 +2123,19 @@
 
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : 1);
       event.preventDefault();
-      els.scroller.scrollLeft += delta;
+      els.boardScroller.scrollLeft += delta;
     }, { passive: false });
 
     function touchCenter(touches) {
+      const first = touches[0];
+      const second = touches[1];
       return {
-        x: (touches[0].clientX + touches[1].clientX) / 2,
-        y: (touches[0].clientY + touches[1].clientY) / 2
+        x: (first.clientX + second.clientX) / 2,
+        y: (first.clientY + second.clientY) / 2
       };
     }
 
-    els.scroller.addEventListener('touchstart', (event) => {
+    els.boardScroller.addEventListener('touchstart', (event) => {
       if (event.touches.length !== 2) {
         twoFingerGesture = null;
         return;
@@ -2314,13 +2149,13 @@
         startX: center.x,
         startY: center.y,
         axis: null,
-        startBoardScroll: els.scroller.scrollLeft,
+        startBoardScroll: els.boardScroller.scrollLeft,
         card,
         startCardScroll: card ? card.scrollTop : 0
       };
     }, { passive: true });
 
-    els.scroller.addEventListener('touchmove', (event) => {
+    els.boardScroller.addEventListener('touchmove', (event) => {
       if (!twoFingerGesture || event.touches.length !== 2) return;
 
       const center = touchCenter(event.touches);
@@ -2336,17 +2171,17 @@
       suppressClickUntil = Date.now() + 300;
 
       if (twoFingerGesture.axis === 'horizontal') {
-        els.scroller.scrollLeft = twoFingerGesture.startBoardScroll - dx;
+        els.boardScroller.scrollLeft = twoFingerGesture.startBoardScroll - dx;
       } else if (twoFingerGesture.card) {
         twoFingerGesture.card.scrollTop = twoFingerGesture.startCardScroll - dy;
       }
     }, { passive: false });
 
-    els.scroller.addEventListener('touchend', (event) => {
+    els.boardScroller.addEventListener('touchend', (event) => {
       if (event.touches.length < 2) twoFingerGesture = null;
     });
 
-    els.scroller.addEventListener('touchcancel', () => {
+    els.boardScroller.addEventListener('touchcancel', () => {
       twoFingerGesture = null;
     });
 
@@ -2356,6 +2191,19 @@
       cardOverflowFrame = window.requestAnimationFrame(setupCardOverflow);
     });
 
+    // 回来看板时静默重读，避免手动刷新页面。
+    let lastReadAt = 0;
+    function refreshIfStale() {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastReadAt < 30000) return;
+      lastReadAt = Date.now();
+      loadProjects({ silent: true });
+    }
+
+    document.addEventListener('visibilitychange', refreshIfStale);
+    window.addEventListener('focus', refreshIfStale);
+
+    lastReadAt = Date.now();
     loadProjects();
   </script>
 </body>
