@@ -1,0 +1,13 @@
+{
+  "name": "hands-off-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "读取本地项目交接文档的只读看板，展示当前阶段、证据、阻塞项与下一步",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/handoff.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
