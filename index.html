@@ -9,7 +9,6 @@
   />
   <title>Hands-off Dashboard · 项目交接看板</title>
   <style>
-
     :root {
       --bg: #ffffff;
       --surface: #f5f5f7;
@@ -919,252 +918,6 @@
       }
       .project-title.is-scrolling .title-track { animation: none !important; }
     }
-
-    /* ── 交接全文入口：沿用 footer 元信息的排版，不新增卡片行 ── */
-    .footer-doc {
-      appearance: none;
-      padding: 0;
-      border: 0;
-      background: none;
-      font: inherit;
-      font-size: 10.5px;
-      line-height: 1.5;
-      color: var(--muted);
-      cursor: pointer;
-      white-space: nowrap;
-      text-decoration: underline;
-      text-decoration-color: var(--border);
-      text-underline-offset: 2px;
-    }
-
-    .footer-doc:hover { color: var(--navy); text-decoration-color: currentColor; }
-    .footer-doc:focus-visible {
-      outline: none;
-      border-radius: 3px;
-      box-shadow: var(--focus-ring);
-    }
-
-    /* ── 全文抽屉 ───────────────────────────────────────────── */
-    .drawer { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; }
-    .drawer[hidden] { display: none; }
-
-    .drawer-scrim {
-      position: absolute;
-      inset: 0;
-      background: rgba(8, 17, 36, 0.46);
-      opacity: 0;
-      transition: opacity var(--motion-base) var(--ease-standard);
-    }
-
-    .drawer.is-open .drawer-scrim { opacity: 1; }
-
-    .drawer-panel {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      width: min(780px, 100%);
-      height: 100%;
-      background: var(--card);
-      box-shadow: -24px 0 70px rgba(8, 17, 36, 0.3);
-      opacity: 0;
-      transform: translateX(26px);
-      transition:
-        transform var(--motion-base) var(--ease-standard),
-        opacity 180ms var(--ease-standard);
-    }
-
-    .drawer.is-open .drawer-panel { opacity: 1; transform: none; }
-
-    .drawer-head {
-      flex: 0 0 auto;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 22px 26px 16px;
-      border-bottom: 1px solid var(--border-soft);
-    }
-
-    .drawer-heading { min-width: 0; }
-
-    .drawer-kicker {
-      font-size: 10px;
-      font-weight: 600;
-      line-height: 1;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-    }
-
-    .drawer-title {
-      margin-top: 6px;
-      font-family: var(--font-display-ui);
-      font-size: 23px;
-      font-weight: 600;
-      line-height: 1.2;
-      letter-spacing: -0.03em;
-      color: var(--fg);
-      overflow-wrap: anywhere;
-    }
-
-    .drawer-path {
-      margin-top: 5px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      line-height: 1.5;
-      color: var(--meta);
-      overflow-wrap: anywhere;
-    }
-
-    .drawer-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-
-    .drawer-reveal,
-    .drawer-close {
-      appearance: none;
-      display: grid;
-      place-items: center;
-      height: 36px;
-      padding: 0 12px;
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      background: var(--card);
-      color: var(--fg-2);
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition:
-        background-color var(--motion-fast) var(--ease-standard),
-        border-color var(--motion-fast) var(--ease-standard);
-    }
-
-    .drawer-close { width: 36px; padding: 0; }
-    .drawer-reveal:hover,
-    .drawer-close:hover { background: var(--surface); border-color: var(--meta); }
-    .drawer-reveal:focus-visible,
-    .drawer-close:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-
-    .drawer-body {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 4px 26px 56px;
-      overscroll-behavior: contain;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
-
-    .drawer-hint { margin-top: 24px; font-size: 13px; color: var(--muted); }
-
-    /* ── Markdown 正文 ──────────────────────────────────────── */
-    .markdown { color: var(--fg-2); font-size: 14px; line-height: 1.72; }
-    .markdown > :first-child { margin-top: 20px; }
-
-    .markdown .meta-grid {
-      display: grid;
-      grid-template-columns: 104px minmax(0, 1fr);
-      gap: 7px 16px;
-      margin: 18px 0 24px;
-      padding: 16px 18px;
-      border: 1px solid var(--border-soft);
-      border-radius: 12px;
-      background: var(--surface-warm);
-    }
-
-    .markdown .meta-grid dt {
-      padding-top: 2px;
-      font-size: 11px;
-      font-weight: 600;
-      line-height: 1.5;
-      letter-spacing: 0.03em;
-      color: var(--muted);
-    }
-
-    .markdown .meta-grid dd {
-      margin: 0;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--fg-2);
-      overflow-wrap: anywhere;
-    }
-
-    @media (max-width: 700px) {
-      .markdown .meta-grid { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 14px; }
-      .markdown .meta-grid dd { margin-bottom: 10px; }
-    }
-    .markdown h2 {
-      margin: 30px 0 10px;
-      font-family: var(--font-display-ui);
-      font-size: 20px;
-      font-weight: 600;
-      line-height: 1.3;
-      letter-spacing: -0.022em;
-      color: var(--fg);
-    }
-    .markdown h3 {
-      margin: 24px 0 8px;
-      font-family: var(--font-display-ui);
-      font-size: 16px;
-      font-weight: 600;
-      line-height: 1.35;
-      letter-spacing: -0.015em;
-      color: var(--fg);
-    }
-    .markdown h4 { margin: 18px 0 6px; font-size: 14px; font-weight: 600; color: var(--fg); }
-    .markdown p { margin: 10px 0; }
-    .markdown ul,
-    .markdown ol { margin: 10px 0; padding-left: 22px; }
-    .markdown li { margin: 4px 0; }
-    .markdown li.nested { list-style: circle; margin-left: 14px; }
-    .markdown strong { color: var(--fg); font-weight: 600; }
-    .markdown em { font-style: italic; }
-    .markdown code {
-      font-family: var(--font-mono);
-      font-size: 0.88em;
-      background: var(--surface);
-      border: 1px solid var(--border-soft);
-      border-radius: 6px;
-      padding: 1px 5px;
-    }
-    .markdown pre {
-      margin: 14px 0;
-      padding: 14px 16px;
-      border: 1px solid var(--border-soft);
-      border-radius: 10px;
-      background: var(--surface-warm);
-      overflow-x: auto;
-    }
-    .markdown pre code { padding: 0; border: 0; background: none; font-size: 12.5px; line-height: 1.6; }
-    .markdown blockquote {
-      margin: 14px 0;
-      padding: 8px 14px;
-      border-left: 3px solid var(--border);
-      border-radius: 0 8px 8px 0;
-      background: var(--surface-warm);
-      color: var(--muted);
-    }
-    .markdown hr { margin: 24px 0; border: 0; border-top: 1px solid var(--border-soft); }
-    .markdown table {
-      width: 100%;
-      margin: 14px 0;
-      border-collapse: collapse;
-      font-size: 13px;
-      line-height: 1.55;
-    }
-    .markdown th,
-    .markdown td { padding: 7px 10px; border: 1px solid var(--border-soft); text-align: left; vertical-align: top; }
-    .markdown th { background: var(--surface); font-weight: 600; color: var(--fg); white-space: nowrap; }
-    .markdown a { color: var(--accent); text-decoration: none; }
-    .markdown a:hover { text-decoration: underline; }
-
-    @media (max-width: 900px) {
-      .drawer-panel { width: min(620px, 100%); }
-    }
-
-    @media (max-width: 700px) {
-      .drawer-head { padding: 16px 16px 12px; }
-      .drawer-body { padding: 2px 16px 40px; }
-      .drawer-title { font-size: 20px; }
-      .drawer-reveal { display: none; }
-    }
   </style>
 </head>
 <body>
@@ -1230,27 +983,6 @@
     </div>
   </div>
 
-  <aside class="drawer" id="drawer" hidden aria-hidden="true">
-    <div class="drawer-scrim" id="drawerScrim"></div>
-    <div class="drawer-panel" id="drawerPanel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
-      <header class="drawer-head">
-        <div class="drawer-heading">
-          <p class="drawer-kicker" id="drawerKicker">Handoff</p>
-          <h2 class="drawer-title" id="drawerTitle">—</h2>
-          <p class="drawer-path" id="drawerPath"></p>
-        </div>
-        <div class="drawer-actions">
-          <button class="drawer-reveal" id="drawerReveal" type="button" title="Show this file in Explorer">Reveal file</button>
-          <button class="drawer-close" id="drawerClose" type="button" aria-label="Close handoff">
-            <svg class="od-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 4l8 8M12 4l-8 8" />
-            </svg>
-          </button>
-        </div>
-      </header>
-      <div class="drawer-body markdown" id="drawerBody"></div>
-    </div>
-  </aside>
 
   <p class="sr-only" id="status" role="status" aria-live="polite"></p>
 
@@ -1269,15 +1001,7 @@
       directionLabel: document.getElementById('directionLabel'),
       sortArrow: document.getElementById('sortArrow'),
       readTime: document.getElementById('readTime'),
-      status: document.getElementById('status'),
-      drawer: document.getElementById('drawer'),
-      drawerScrim: document.getElementById('drawerScrim'),
-      drawerClose: document.getElementById('drawerClose'),
-      drawerReveal: document.getElementById('drawerReveal'),
-      drawerKicker: document.getElementById('drawerKicker'),
-      drawerTitle: document.getElementById('drawerTitle'),
-      drawerPath: document.getElementById('drawerPath'),
-      drawerBody: document.getElementById('drawerBody')
+      status: document.getElementById('status')
     };
 
     const state = {
@@ -1288,8 +1012,6 @@
       loading: true,
       error: null,
       readAt: null,
-      drawerId: null,
-      lastFocus: null,
       emptyPreview: new URLSearchParams(window.location.search).get('state') === 'empty'
     };
 
@@ -1433,12 +1155,6 @@
         els.status.textContent = state.error
           ? 'Read failed'
           : `Loaded ${state.projects.length} ${state.projects.length === 1 ? 'project' : 'projects'}`;
-
-        const requestedDoc = new URLSearchParams(window.location.search).get('doc');
-        if (!state.error && requestedDoc && !state.drawerId) {
-          const match = state.projects.find((item) => item.id === requestedDoc && item.handoff);
-          if (match) openDrawer(match.id);
-        }
       }
     }
 
@@ -1514,30 +1230,20 @@
     function footerMarkup(project) {
       const hasLast = Boolean(project.lastActivity);
       const hasCreated = Boolean(project.created);
-      const parts = [];
 
       if (!hasLast && !hasCreated) {
-        parts.push(`<span class="time-item placeholder">Dates not recorded</span>`);
-      } else {
-        const last = hasLast
-          ? `<span class="time-item">Last activity <time datetime="${escapeHtml(project.lastActivity)}">${escapeHtml(project.lastActivity)}</time></span>`
-          : `<span class="time-item placeholder">Last activity not recorded</span>`;
-        const created = hasCreated
-          ? `<span class="time-item">Created <time datetime="${escapeHtml(project.created)}">${escapeHtml(project.created)}</time></span>`
-          : `<span class="time-item placeholder">Created not recorded</span>`;
-
-        parts.push(last, `<span class="footer-sep" aria-hidden="true">·</span>`, created);
+        return `<span class="time-item placeholder">Dates not recorded</span>`;
       }
 
-      if (project.handoff) {
-        const label = `${project.handoff.relPath} · click to read the full handoff`;
-        parts.push(
-          `<span class="footer-sep" aria-hidden="true">·</span>`,
-          `<button class="footer-doc" type="button" data-doc-id="${escapeHtml(project.id)}" title="${escapeHtml(label)}">Handoff</button>`
-        );
-      }
+      const last = hasLast
+        ? `<span class="time-item">Last activity <time datetime="${escapeHtml(project.lastActivity)}">${escapeHtml(project.lastActivity)}</time></span>`
+        : `<span class="time-item placeholder">Last activity not recorded</span>`;
 
-      return parts.join('');
+      const created = hasCreated
+        ? `<span class="time-item">Created <time datetime="${escapeHtml(project.created)}">${escapeHtml(project.created)}</time></span>`
+        : `<span class="time-item placeholder">Created not recorded</span>`;
+
+      return `${last}<span class="footer-sep" aria-hidden="true">·</span>${created}`;
     }
 
     function projectMarkup(project) {
@@ -1784,256 +1490,11 @@
       });
     }
 
-    /* ── Handoff drawer ──────────────────────────────────────── */
-
-    function inlineMarkup(text) {
-      let output = escapeHtml(text);
-      output = output.replace(/`([^`]+)`/g, (match, code) => `<code>${code}</code>`);
-      output = output.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label, href) => {
-        const safe = /^(https?:|mailto:|#|\/)/i.test(href) ? href : '#';
-        return `<a href="${safe}" target="_blank" rel="noreferrer noopener">${label}</a>`;
-      });
-      output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      output = output.replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>');
-      output = output.replace(
-        /(^|[\s（(])(https?:\/\/[^\s<]+)/g,
-        (match, prefix, url) => {
-          const trimmed = url.replace(/[),.;:!?，。；：）】”"']+$/, '');
-          const tail = url.slice(trimmed.length);
-          return `${prefix}<a href="${trimmed}" target="_blank" rel="noreferrer noopener">${trimmed}</a>${tail}`;
-        }
-      );
-      return output;
-    }
-
-    function splitTableRow(row) {
-      return row
-        .trim()
-        .replace(/^\|/, '')
-        .replace(/\|$/, '')
-        .split('|')
-        .map((cell) => cell.trim());
-    }
-
-    function isTableStart(lines, index) {
-      return (
-        /^\s*\|/.test(lines[index] || '') &&
-        /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(lines[index + 1] || '')
-      );
-    }
-
-    function startsBlock(line) {
-      return (
-        /^(#{1,6})\s+/.test(line) ||
-        /^\s*[-*+]\s+/.test(line) ||
-        /^\s*\d+[.)]\s+/.test(line) ||
-        /^\s*```/.test(line) ||
-        /^\s*>/.test(line) ||
-        /^\s*\|/.test(line) ||
-        /^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)
-      );
-    }
-
-    function renderMarkdown(markdown) {
-      const lines = String(markdown).replace(/\r\n/g, '\n').split('\n');
-      const html = [];
-      let skippedTitle = false;
-
-      // 文档开头那段 11 行 `Key: value` 结构化头，单独渲染成信息面板，而不是一大段文字。
-      const metaLine = /^([A-Za-z][A-Za-z0-9 _-]{1,30}):\s*(.*)$/;
-      const metaPairs = [];
-      let metaIndex = 0;
-      while (metaIndex < lines.length && metaLine.test(lines[metaIndex])) {
-        const match = lines[metaIndex].match(metaLine);
-        metaPairs.push([match[1], match[2].trim()]);
-        metaIndex += 1;
-      }
-
-      let index;
-      if (metaPairs.length >= 4) {
-        html.push(
-          `<dl class="meta-grid">${metaPairs
-            .map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${inlineMarkup(value) || '—'}</dd>`)
-            .join('')}</dl>`
-        );
-        index = metaIndex;
-      } else {
-        index = 0;
-      }
-
-      while (index < lines.length) {
-        const line = lines[index];
-
-        if (!line.trim()) {
-          index += 1;
-          continue;
-        }
-
-        if (/^\s*```/.test(line)) {
-          const language = line.replace(/^\s*```/, '').trim();
-          const buffer = [];
-          index += 1;
-          while (index < lines.length && !/^\s*```/.test(lines[index])) {
-            buffer.push(lines[index]);
-            index += 1;
-          }
-          index += 1;
-          const languageClass = language ? ` class="language-${escapeHtml(language)}"` : '';
-          html.push(`<pre><code${languageClass}>${escapeHtml(buffer.join('\n'))}</code></pre>`);
-          continue;
-        }
-
-        const heading = line.match(/^(#{1,6})\s+(.*)$/);
-        if (heading) {
-          const level = heading[1].length;
-          index += 1;
-          if (level === 1 && !skippedTitle) {
-            skippedTitle = true;
-            continue;
-          }
-          const tag = `h${Math.min(Math.max(level, 2), 4)}`;
-          html.push(`<${tag}>${inlineMarkup(heading[2])}</${tag}>`);
-          continue;
-        }
-
-        if (/^\s*[-*+]\s+/.test(line)) {
-          const items = [];
-          while (index < lines.length && /^\s*[-*+]\s+/.test(lines[index])) {
-            const raw = lines[index];
-            items.push({
-              indent: raw.match(/^\s*/)[0].length,
-              text: raw.replace(/^\s*[-*+]\s+/, '')
-            });
-            index += 1;
-          }
-          const baseIndent = Math.min(...items.map((item) => item.indent));
-          html.push(
-            `<ul>${items
-              .map(
-                (item) =>
-                  `<li${item.indent > baseIndent + 1 ? ' class="nested"' : ''}>${inlineMarkup(item.text)}</li>`
-              )
-              .join('')}</ul>`
-          );
-          continue;
-        }
-
-        if (/^\s*\d+[.)]\s+/.test(line)) {
-          const items = [];
-          while (index < lines.length && /^\s*\d+[.)]\s+/.test(lines[index])) {
-            items.push(lines[index].replace(/^\s*\d+[.)]\s+/, ''));
-            index += 1;
-          }
-          html.push(`<ol>${items.map((item) => `<li>${inlineMarkup(item)}</li>`).join('')}</ol>`);
-          continue;
-        }
-
-        if (isTableStart(lines, index)) {
-          const head = splitTableRow(lines[index]);
-          index += 2;
-          const rows = [];
-          while (index < lines.length && /^\s*\|/.test(lines[index])) {
-            rows.push(splitTableRow(lines[index]));
-            index += 1;
-          }
-          const thead = `<thead><tr>${head.map((cell) => `<th>${inlineMarkup(cell)}</th>`).join('')}</tr></thead>`;
-          const tbody = `<tbody>${rows
-            .map((row) => `<tr>${row.map((cell) => `<td>${inlineMarkup(cell)}</td>`).join('')}</tr>`)
-            .join('')}</tbody>`;
-          html.push(`<table>${thead}${tbody}</table>`);
-          continue;
-        }
-
-        if (/^\s*>/.test(line)) {
-          const buffer = [];
-          while (index < lines.length && /^\s*>/.test(lines[index])) {
-            buffer.push(lines[index].replace(/^\s*>\s?/, ''));
-            index += 1;
-          }
-          html.push(`<blockquote>${buffer.map(inlineMarkup).join('<br>')}</blockquote>`);
-          continue;
-        }
-
-        if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
-          html.push('<hr>');
-          index += 1;
-          continue;
-        }
-
-        const buffer = [line];
-        index += 1;
-        while (index < lines.length && lines[index].trim() && !startsBlock(lines[index])) {
-          buffer.push(lines[index]);
-          index += 1;
-        }
-        html.push(`<p>${buffer.map(inlineMarkup).join('<br>')}</p>`);
-      }
-
-      return html.join('\n');
-    }
-
-    async function openDrawer(projectId) {
-      const project = state.projects.find((item) => item.id === projectId);
-      if (!project) return;
-
-      state.drawerId = projectId;
-      state.lastFocus = document.activeElement;
-
-      els.drawerKicker.textContent = project.handoff && project.handoff.title
-        ? project.handoff.title
-        : 'Handoff';
-      els.drawerTitle.textContent = project.name;
-      els.drawerPath.textContent = project.handoff ? project.handoff.relPath : '';
-      els.drawerBody.innerHTML = '<p class="drawer-hint">Reading…</p>';
-      els.drawerReveal.hidden = !project.handoff;
-
-      els.drawer.hidden = false;
-      els.drawer.setAttribute('aria-hidden', 'false');
-      window.requestAnimationFrame(() => els.drawer.classList.add('is-open'));
-      els.drawerClose.focus();
-
-      try {
-        const response = await fetch(`/api/handoff?id=${encodeURIComponent(projectId)}`, {
-          cache: 'no-store'
-        });
-        if (!response.ok) throw new Error(`Request failed with HTTP ${response.status}`);
-        const data = await response.json();
-        if (state.drawerId !== projectId) return;
-        els.drawerBody.innerHTML = renderMarkdown(data.markdown || '');
-        els.drawerBody.scrollTop = 0;
-      } catch (error) {
-        if (state.drawerId !== projectId) return;
-        els.drawerBody.innerHTML = `<p class="drawer-hint">Could not read this file: ${escapeHtml(error.message)}</p>`;
-      }
-    }
-
-    function closeDrawer() {
-      if (els.drawer.hidden) return;
-      state.drawerId = null;
-      els.drawer.classList.remove('is-open');
-      els.drawer.setAttribute('aria-hidden', 'true');
-
-      window.setTimeout(() => {
-        if (!els.drawer.classList.contains('is-open')) els.drawer.hidden = true;
-      }, 220);
-
-      if (state.lastFocus && typeof state.lastFocus.focus === 'function') {
-        state.lastFocus.focus();
-      }
-      state.lastFocus = null;
-    }
-
     /* ── Interaction ─────────────────────────────────────────── */
 
     els.board.addEventListener('click', (event) => {
       if (Date.now() < suppressClickUntil) {
         event.preventDefault();
-        return;
-      }
-
-      const docButton = event.target.closest('.footer-doc');
-      if (docButton) {
-        openDrawer(docButton.dataset.docId);
         return;
       }
 
@@ -2087,22 +1548,6 @@
       state.direction = state.direction === 'asc' ? 'desc' : 'asc';
       render();
       els.status.textContent = `Sorted by ${state.sortField === 'created' ? 'created' : 'last activity'}, ${state.direction === 'asc' ? 'ascending' : 'descending'}`;
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') closeDrawer();
-    });
-
-    els.drawerScrim.addEventListener('click', closeDrawer);
-    els.drawerClose.addEventListener('click', closeDrawer);
-    els.drawerReveal.addEventListener('click', async () => {
-      const project = state.projects.find((item) => item.id === state.drawerId);
-      if (!project || !project.handoff) return;
-      try {
-        await fetch(`/api/reveal?id=${encodeURIComponent(project.id)}`, { method: 'POST' });
-      } catch (error) {
-        els.status.textContent = 'Could not open the file location';
-      }
     });
 
     els.boardScroller.addEventListener('wheel', (event) => {
