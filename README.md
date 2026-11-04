@@ -73,6 +73,20 @@ Last-Activity: 2026-11-04
 - 排序、置顶（localStorage）、滚动、跑马灯等交互逻辑与原型相同。
 - 深链 `?doc=<项目 id>` 可直接打开某个项目的全文，方便直接分享/自测。
 
+## 触屏（手机 / 平板）
+
+只在 `@media (pointer: coarse)` 下生效，桌面版式与交互一行未动。
+
+- **左右滑动**：切换项目。触屏上一张卡约占满屏宽（`min(560px, 100% - 20px)`），右侧露出下一张的边缘，配合 `scroll-snap-type: x mandatory`，滑一下正好停在一张卡上。
+- **上下滑动**：滚动当前卡片内部的内容。卡片高度就是可视高度，内容超出时在卡片内滚动；滚到边界后不会把整页拖走（`overscroll-behavior-y: contain`）。
+
+实现上有两个坑，改动时请勿回退：
+
+1. `.board-scroller` 与 `.project` **不要设** `touch-action: none`，否则单指完全滑不动；也**不要设** `pan-x pan-y`，它不含 `pinch-zoom`，在卡片自身可纵向滚动时会吞掉横向手势。保持默认 `auto`，让浏览器按手势方向分发。
+2. `.project` 的 `overscroll-behavior` 必须写成 `overscroll-behavior-y`。写成简写会把横向滚动链一起切断，手势传不到外层看板容器。
+
+这两条都是在真机等效的触摸事件模拟下逐项对比得出的，不是推测。
+
 ## 配置
 
 `config.json`：

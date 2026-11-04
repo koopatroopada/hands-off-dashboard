@@ -456,7 +456,9 @@
       scrollbar-color: var(--scroll-thumb) transparent;
       overscroll-behavior-x: contain;
       border-radius: 12px;
-      touch-action: none;
+      /* 不要设 touch-action: none / pan-x pan-y：前者让单指彻底滑不动，
+         后者不含 pinch-zoom，卡片内纵滑时会吞掉横向手势。默认 auto 让
+         浏览器按手势方向自行分发：横向滚看板，纵向滚卡片。 */
     }
 
     .board-scroller:focus-visible {
@@ -507,10 +509,9 @@
       -webkit-backdrop-filter: var(--glass-blur);
       backdrop-filter: var(--glass-blur);
       overflow-y: auto;
-      overscroll-behavior: contain;
+      overscroll-behavior-y: contain;
       scrollbar-width: thin;
       scrollbar-color: var(--border) transparent;
-      touch-action: none;
       transition: box-shadow var(--motion-base) var(--ease-standard);
     }
 
@@ -1179,6 +1180,20 @@
       .gate { -webkit-line-clamp: 1; }
     }
 
+    /* ── Touch ─────────────────────────────────────────────────
+       触屏设备（手机、平板）：横向一屏一张卡并吸附，左右滑动切换项目；
+       卡片内容超高时在卡片内部纵向滚动。pointer: fine 的桌面不受影响。 */
+    @media (pointer: coarse) {
+      .board-scroller {
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .board { grid-auto-columns: min(560px, calc(100% - 20px)); }
+
+      .project { scroll-snap-align: start; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         scroll-behavior: auto !important;
@@ -1317,9 +1332,6 @@
       lastFocus: null,
       emptyPreview: new URLSearchParams(window.location.search).get('state') === 'empty'
     };
-
-    let twoFingerGesture = null;
-    let suppressClickUntil = 0;
 
     /* ── Local preferences ───────────────────────────────────── */
 
@@ -2056,11 +2068,6 @@
     /* ── Interaction ─────────────────────────────────────────── */
 
     els.board.addEventListener('click', (event) => {
-      if (Date.now() < suppressClickUntil) {
-        event.preventDefault();
-        return;
-      }
-
       const docLink = event.target.closest('.doc-link');
       if (docLink) {
         openDrawer(docLink.dataset.docId);
@@ -2140,64 +2147,6 @@
       els.boardScroller.scrollLeft += delta;
     }, { passive: false });
 
-    function touchCenter(touches) {
-      const first = touches[0];
-      const second = touches[1];
-      return {
-        x: (first.clientX + second.clientX) / 2,
-        y: (first.clientY + second.clientY) / 2
-      };
-    }
-
-    els.boardScroller.addEventListener('touchstart', (event) => {
-      if (event.touches.length !== 2) {
-        twoFingerGesture = null;
-        return;
-      }
-
-      const center = touchCenter(event.touches);
-      const target = document.elementFromPoint(center.x, center.y);
-      const card = target ? target.closest('.project') : null;
-
-      twoFingerGesture = {
-        startX: center.x,
-        startY: center.y,
-        axis: null,
-        startBoardScroll: els.boardScroller.scrollLeft,
-        card,
-        startCardScroll: card ? card.scrollTop : 0
-      };
-    }, { passive: true });
-
-    els.boardScroller.addEventListener('touchmove', (event) => {
-      if (!twoFingerGesture || event.touches.length !== 2) return;
-
-      const center = touchCenter(event.touches);
-      const dx = center.x - twoFingerGesture.startX;
-      const dy = center.y - twoFingerGesture.startY;
-
-      if (!twoFingerGesture.axis) {
-        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-        twoFingerGesture.axis = Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical';
-      }
-
-      event.preventDefault();
-      suppressClickUntil = Date.now() + 300;
-
-      if (twoFingerGesture.axis === 'horizontal') {
-        els.boardScroller.scrollLeft = twoFingerGesture.startBoardScroll - dx;
-      } else if (twoFingerGesture.card) {
-        twoFingerGesture.card.scrollTop = twoFingerGesture.startCardScroll - dy;
-      }
-    }, { passive: false });
-
-    els.boardScroller.addEventListener('touchend', (event) => {
-      if (event.touches.length < 2) twoFingerGesture = null;
-    });
-
-    els.boardScroller.addEventListener('touchcancel', () => {
-      twoFingerGesture = null;
-    });
 
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') closeDrawer();
