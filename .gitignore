@@ -1,0 +1,31 @@
+# ---- 操作系统 / 资源管理器 ----
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store
+$RECYCLE.BIN/
+
+# ---- 编辑器和 IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- WorkBuddy 本地工作区数据（会话、记忆、临时缓存）----
+.workbuddy/
+*.artifact.json
+
+# ---- 依赖与构建产物（当前为纯静态页面，预留）----
+node_modules/
+dist/
+build/
+.output/
+.cache/
+
+# ---- 日志与临时文件 ----
+*.log
+npm-debug.log*
+yarn-error.log*
+*.tmp
+*.bak

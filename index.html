@@ -1,0 +1,1589 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Hands-off Dashboard is a read-only personal project board with horizontally scrolling project cards, stages, evidence, next steps, and dates."
+  />
+  <title>Hands-off Dashboard</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f5f5f7;
+      --surface-warm: #fbfbfd;
+
+      --fg: #1d1d1f;
+      --fg-2: #424245;
+      --muted: #6e6e73;
+      --meta: #86868b;
+
+      --border: #d2d2d7;
+      --border-soft: #e8e8ed;
+
+      --accent: #0071e3;
+      --accent-on: #ffffff;
+      --accent-hover: #0077ed;
+      --accent-active: #0066cc;
+
+      --success: #16a34a;
+      --warn: #eab308;
+      --danger: #dc2626;
+
+      --warning-ink: #7a5c2e;
+      --warning-surface: #fbf7ef;
+      --warning-border: #e8ddc9;
+
+      --font-display:
+        "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-body:
+        "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-cjk:
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --font-ui:
+        "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-display-ui:
+        "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-mono:
+        "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
+
+      --text-xs: 12px;
+      --text-sm: 14px;
+      --text-base: 17px;
+      --text-lg: 21px;
+      --text-xl: 28px;
+      --text-2xl: 40px;
+      --text-3xl: 56px;
+      --text-4xl: 80px;
+
+      --leading-body: 1.47;
+      --leading-tight: 1.05;
+      --tracking-display: -0.015em;
+
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-12: 48px;
+
+      --section-y-desktop: 100px;
+      --section-y-tablet: 64px;
+      --section-y-phone: 40px;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-pill: 980px;
+
+      --elev-flat: none;
+      --elev-ring: 0 0 0 1px var(--border);
+      --elev-raised: 0 12px 32px rgba(0, 0, 0, 0.08);
+
+      --focus-ring: 0 0 0 4px color-mix(in oklab, var(--navy), transparent 72%);
+
+      --motion-fast: 150ms;
+      --motion-base: 220ms;
+      --ease-standard: cubic-bezier(0.28, 0, 0.22, 1);
+
+      --container-max: 1024px;
+      --container-gutter-desktop: 22px;
+      --container-gutter-tablet: 18px;
+      --container-gutter-phone: 16px;
+
+      /* Reference-led frame and board surfaces */
+      --frame: #081124;
+      --frame-mid: #0b1d2b;
+      --frame-glow: rgba(35, 96, 111, 0.4);
+      --page-bg:
+        radial-gradient(1100px 640px at 78% -12%, var(--frame-glow), transparent 62%),
+        linear-gradient(135deg, #081124 0%, #0b1d2b 52%, #091426 100%);
+      --shell-border: rgba(255, 255, 255, 0.18);
+      --shell-shadow:
+        0 38px 90px rgba(0, 0, 0, 0.42),
+        0 1px 0 rgba(255, 255, 255, 0.12) inset;
+      --navy: #1b2a5e;
+      --navy-hover: #243873;
+      --navy-active: #142046;
+      --stage-teal: #0f969f;
+      --board: #f3f4f7;
+      --board-border: #e7e9ef;
+      --card: #ffffff;
+      --card-border: #e8eaef;
+      --card-shadow:
+        0 6px 18px rgba(20, 28, 45, 0.06),
+        0 1px 2px rgba(20, 28, 45, 0.04);
+      --card-shadow-hover:
+        0 10px 26px rgba(20, 28, 45, 0.08),
+        0 1px 2px rgba(20, 28, 45, 0.04);
+      --pin-surface: #f1f3f7;
+      --control-border: #e5e7ed;
+      --control-surface: #f5f6f8;
+      --hairline-faint: #eef0f4;
+      --scroll-thumb: #cbd0da;
+      --navy-shadow-soft: 0 2px 6px rgba(27, 42, 94, 0.2);
+      --navy-shadow-strong: 0 6px 14px rgba(27, 42, 94, 0.22);
+      --glass: rgba(255, 255, 255, 0.56);
+      --glass-strong: rgba(255, 255, 255, 0.74);
+      --glass-border: rgba(255, 255, 255, 0.84);
+      --glass-hairline: rgba(29, 29, 31, 0.08);
+      --glass-blur: blur(18px) saturate(135%);
+      --glass-shadow:
+        0 10px 30px rgba(20, 28, 45, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      --glass-shadow-hover:
+        0 16px 38px rgba(20, 28, 45, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      --toggle-face: rgba(255, 255, 255, 0.6);
+      --toggle-border: rgba(255, 255, 255, 0.9);
+      --toggle-shadow:
+        0 4px 10px rgba(20, 28, 45, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      --toggle-shadow-hover:
+        0 6px 14px rgba(20, 28, 45, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96);
+      --board-bg:
+        radial-gradient(900px 460px at 12% -10%, rgba(98, 139, 166, 0.18), transparent 62%),
+        radial-gradient(760px 480px at 88% 110%, rgba(27, 42, 94, 0.12), transparent 64%),
+        linear-gradient(180deg, #f3f4f7, #eef1f5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background-color: var(--frame);
+      background-image: var(--page-bg);
+      color: var(--fg);
+      font-family: var(--font-ui);
+      font-size: var(--text-base);
+      line-height: var(--leading-body);
+      letter-spacing: -0.018em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+    }
+
+    [hidden] { display: none !important; }
+    p, h1, h2, h3 { margin: 0; }
+    button { font: inherit; }
+    time { font-variant-numeric: tabular-nums; }
+
+    .od-icon {
+      width: var(--od-icon-size, 1em);
+      height: var(--od-icon-size, 1em);
+      flex: none;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .icon-pin { --od-icon-size: 18px; }
+    .icon-arrow { --od-icon-size: 14px; }
+    .icon-warning { --od-icon-size: 17px; }
+    .icon-chevron { --od-icon-size: 14px; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Frame and application shell ─────────────────────────── */
+    .stage {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      padding: 24px;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    .app-shell {
+      width: min(1480px, 100%);
+      height: 100%;
+      min-height: 0;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--shell-border);
+      border-radius: 26px;
+      background: var(--card);
+      box-shadow: var(--shell-shadow);
+    }
+
+    /* ── Header ──────────────────────────────────────────────── */
+    .app-header {
+      flex: 0 0 auto;
+      padding: 24px 28px 16px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      min-width: 0;
+    }
+
+    .identity {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brandmark {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      border-radius: 12px;
+      background: var(--navy);
+      color: var(--accent-on);
+      box-shadow: var(--navy-shadow-strong);
+    }
+
+    .brandmark svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .title-block {
+      min-width: 0;
+    }
+
+    .app-title {
+      font-family: var(--font-display-ui);
+      font-size: clamp(28px, 2.6vw, 40px);
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: -0.035em;
+      color: var(--fg);
+      text-wrap: balance;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--muted);
+      letter-spacing: -0.01em;
+    }
+
+    .generated {
+      flex: 0 0 auto;
+      padding-top: 2px;
+      font-size: 11.5px;
+      line-height: 1.6;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .generated strong {
+      color: var(--fg-2);
+      font-weight: 500;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+      min-width: 0;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .toolbar-label {
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-right: 1px;
+    }
+
+    .segmented {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid var(--control-border);
+      border-radius: 10px;
+      background: var(--control-surface);
+    }
+
+    .sort-button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      min-height: 36px;
+      padding: 8px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 500;
+      line-height: 1.2;
+      cursor: pointer;
+      white-space: nowrap;
+      transition:
+        background-color var(--motion-fast) var(--ease-standard),
+        color var(--motion-fast) var(--ease-standard),
+        box-shadow var(--motion-fast) var(--ease-standard);
+    }
+
+    .sort-button:hover {
+      color: var(--fg);
+      background: var(--bg);
+    }
+
+    .sort-button[aria-pressed="true"] {
+      background: var(--navy);
+      color: var(--accent-on);
+      font-weight: 600;
+      box-shadow: var(--navy-shadow-soft);
+    }
+
+    .sort-button[aria-pressed="true"]:hover {
+      background: var(--navy-hover);
+      color: var(--accent-on);
+    }
+
+    .sort-button:focus-visible,
+    .direction-button:focus-visible,
+    .pin:focus-visible,
+    .why-toggle:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+
+    .direction-button {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card);
+      color: var(--fg-2);
+      font-size: 12.5px;
+      font-weight: 500;
+      line-height: 1.2;
+      cursor: pointer;
+      white-space: nowrap;
+      transition:
+        background-color var(--motion-fast) var(--ease-standard),
+        border-color var(--motion-fast) var(--ease-standard);
+    }
+
+    .direction-button:hover {
+      background: var(--surface);
+      border-color: var(--meta);
+    }
+
+    .sort-arrow {
+      transition: transform var(--motion-fast) var(--ease-standard);
+    }
+
+    .sort-arrow.is-ascending { transform: rotate(180deg); }
+
+    .count-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      margin-left: auto;
+      padding: 4px 12px;
+      border: 1px solid var(--control-border);
+      border-radius: var(--radius-pill);
+      background: var(--control-surface);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    /* ── Board ───────────────────────────────────────────────── */
+    .board-area {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 16px 24px 24px;
+      background: var(--card);
+    }
+
+    .board-panel {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      border: 1px solid var(--board-border);
+      border-radius: 20px;
+      background: var(--board-bg);
+    }
+
+    .board-scroller {
+      flex: 1 1 auto;
+      min-width: 0;
+      min-height: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scroll-thumb) transparent;
+      overscroll-behavior-x: contain;
+      border-radius: 12px;
+      touch-action: none;
+    }
+
+    .board-scroller:focus-visible {
+      outline: 2px solid var(--navy);
+      outline-offset: -2px;
+    }
+
+    .board-scroller::-webkit-scrollbar { height: 9px; }
+    .board-scroller::-webkit-scrollbar-track { background: transparent; }
+    .board-scroller::-webkit-scrollbar-thumb {
+      background: var(--scroll-thumb);
+      border-radius: var(--radius-pill);
+      border: 2px solid var(--board);
+    }
+
+    .board {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: max(180px, calc((100% - 36px) * 0.15));
+      grid-template-rows: minmax(0, 1fr);
+      gap: 12px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .board.is-empty {
+      display: grid;
+      grid-auto-flow: row;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      grid-auto-columns: auto;
+      grid-auto-rows: auto;
+      place-items: center;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .project {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px 16px;
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      background: var(--glass);
+      box-shadow: var(--glass-shadow);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      touch-action: none;
+      transition: box-shadow var(--motion-base) var(--ease-standard);
+    }
+
+    @media (hover: hover) {
+      .project:hover { box-shadow: var(--glass-shadow-hover); }
+    }
+
+    .project-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .project-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-family: var(--font-display-ui);
+      font-size: clamp(24px, 1.8vw, 27px);
+      font-weight: 600;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      color: var(--fg);
+      white-space: nowrap;
+      display: block;
+      overflow: hidden;
+    }
+
+    .title-track {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 32px;
+      min-width: max-content;
+      will-change: transform;
+    }
+
+    .title-text { white-space: nowrap; }
+
+    .project-title:not(.is-scrolling) .title-text[aria-hidden="true"] {
+      display: none;
+    }
+
+    .project-title.is-scrolling .title-track {
+      animation: title-marquee var(--title-duration, 10s) linear infinite;
+    }
+
+    .project-title.is-scrolling:hover .title-track,
+    .project-title.is-scrolling:focus-within .title-track,
+    .project:hover .project-title.is-scrolling .title-track,
+    .project:focus-within .project-title.is-scrolling .title-track {
+      animation-play-state: paused;
+    }
+
+    @keyframes title-marquee {
+      0%, 12% { transform: translateX(0); }
+      88%, 100% { transform: translateX(calc(-1 * var(--title-shift, 0px))); }
+    }
+
+    .pin {
+      appearance: none;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      margin: -9px -9px 0 0;
+      padding: 0;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--meta);
+      cursor: pointer;
+      transition:
+        color var(--motion-fast) var(--ease-standard),
+        background-color var(--motion-fast) var(--ease-standard);
+    }
+
+    .pin:hover {
+      color: var(--navy);
+      background: var(--glass-strong);
+    }
+
+    .pin[aria-pressed="true"] { color: var(--navy); }
+    .pin[aria-pressed="true"] .pin-head { fill: currentColor; }
+
+    .why {
+      margin-top: 8px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--muted);
+      letter-spacing: -0.012em;
+      overflow-wrap: anywhere;
+      display: block;
+      max-height: 6.4em;
+      min-height: 6.4em;
+      overflow: hidden;
+    }
+
+    .why-wrap {
+      position: relative;
+      margin-top: 8px;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+
+    .why-wrap .why {
+      margin-top: 0;
+    }
+
+    .why.is-expanded {
+      max-height: none;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .why-toggle {
+      appearance: none;
+      position: absolute;
+      top: calc(6.4em - 28px);
+      right: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--toggle-border);
+      border-radius: 8px;
+      background: var(--toggle-face);
+      box-shadow: var(--toggle-shadow);
+      -webkit-backdrop-filter: blur(8px) saturate(130%);
+      backdrop-filter: blur(8px) saturate(130%);
+      color: var(--muted);
+      cursor: pointer;
+      transition:
+        color var(--motion-fast) var(--ease-standard),
+        box-shadow var(--motion-fast) var(--ease-standard);
+    }
+
+    .why-toggle::before {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border-radius: 12px;
+    }
+
+    .why-toggle:hover {
+      color: var(--fg);
+      box-shadow: var(--toggle-shadow-hover);
+    }
+
+    .why-toggle .chevron {
+      transition: transform var(--motion-fast) var(--ease-standard);
+    }
+
+    .why-toggle[aria-expanded="true"] .chevron {
+      transform: rotate(180deg);
+    }
+
+    .block { margin-top: 20px; }
+
+    .block-label {
+      margin-bottom: 8px;
+      font-size: 9.5px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .stage-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .stage-name {
+      min-width: 0;
+      font-family: var(--font-display-ui);
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.3;
+      letter-spacing: -0.018em;
+      color: var(--stage-teal);
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .stage-count {
+      flex: 0 0 auto;
+      font-size: 11.5px;
+      font-weight: 500;
+      line-height: 1.3;
+      color: var(--muted);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .evidence {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .gate {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .next-action {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.55;
+      color: var(--fg);
+      letter-spacing: -0.012em;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+
+    .next-action .action-text {
+      min-width: 0;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 32;
+      overflow: hidden;
+    }
+
+    .next-action .action-arrow {
+      color: var(--meta);
+      margin-top: 0.32em;
+    }
+
+    .next-action.is-placeholder {
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .undetermined {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border: 1px solid var(--warning-border);
+      border-radius: 8px;
+      background: var(--warning-surface);
+      color: var(--warning-ink);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.45;
+      letter-spacing: -0.008em;
+    }
+
+    .placeholder { color: var(--muted); }
+
+    .project-footer {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--glass-hairline);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 6px;
+      font-size: 10.5px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .time-item { white-space: nowrap; }
+    .footer-sep { color: var(--meta); }
+
+    /* ── Empty state ─────────────────────────────────────────── */
+    .empty-state {
+      width: min(100%, 440px);
+      padding: 40px 34px;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: var(--card-shadow);
+      text-align: center;
+    }
+
+    .empty-mark {
+      display: grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 18px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--muted);
+    }
+
+    .empty-title {
+      font-family: var(--font-display-ui);
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+      color: var(--fg);
+    }
+
+    .empty-copy {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--muted);
+      text-wrap: pretty;
+    }
+
+    .no-script {
+      padding: 24px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .app-header { padding: 20px 20px 16px; }
+      .board-area { padding: 16px 20px 20px; }
+      .app-title { font-size: clamp(27px, 3vw, 34px); }
+    }
+
+    @media (max-width: 900px) {
+      .board { grid-auto-columns: max(180px, calc((100% - 12px) * 0.3)); }
+      .header-top { gap: 16px; }
+      .generated { font-size: 10.5px; }
+      .toolbar { margin-top: 16px; }
+    }
+
+    @media (max-width: 700px) {
+      .stage { padding: 12px; }
+      .app-shell { border-radius: 20px; }
+      .app-header { padding: 16px 16px 12px; }
+      .board-area { padding: 12px; }
+      .board-panel { padding: 8px; border-radius: 16px; }
+      .header-top { flex-direction: column; gap: 8px; }
+      .generated { padding-top: 0; text-align: left; }
+      .identity { gap: 12px; }
+      .brandmark { width: 32px; height: 32px; border-radius: 10px; }
+      .brandmark svg { width: 18px; height: 18px; }
+      .app-title { font-size: 28px; }
+      .subtitle { font-size: 12px; }
+      .toolbar { flex-wrap: wrap; gap: 8px; }
+      .controls { gap: 8px; }
+      .count-pill { margin-left: 0; }
+      .project { padding: 16px 16px 12px; border-radius: 14px; }
+      .block { margin-top: 16px; }
+      .why { font-size: 13.5px; min-height: 6.4em; }
+    }
+
+    @media (max-width: 480px) {
+      .stage { padding: 8px; }
+      .app-shell { border-radius: 16px; }
+      .app-header { padding: 16px 12px 12px; }
+      .board-area { padding: 8px; }
+      .board-panel { padding: 8px; border-radius: 14px; }
+      .app-title { font-size: 25px; }
+      .project { padding: 16px 12px 12px; }
+      .project-title { font-size: 24px; }
+      .why { font-size: 13.5px; min-height: 6.4em; }
+      .stage-name { font-size: 18px; }
+      .block { margin-top: 16px; }
+      .project-footer { font-size: 10.5px; }
+      .sort-button { padding-inline: 10px; }
+    }
+
+    @media (max-height: 700px) {
+      .app-header { padding-top: 16px; }
+      .toolbar { margin-top: 12px; }
+      .board-area { padding-top: 12px; }
+      .project { padding-top: 16px; }
+      .block { margin-top: 16px; }
+      .gate { -webkit-line-clamp: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+      .project-title.is-scrolling .title-track { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="app-shell">
+      <header class="app-header" aria-label="Hands-off Dashboard header and toolbar">
+        <div class="header-top">
+          <div class="identity">
+            <span class="brandmark" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2.5" y="2.5" width="5.6" height="5.6" rx="1.3" />
+                <rect x="11.9" y="2.5" width="5.6" height="5.6" rx="1.3" />
+                <rect x="2.5" y="11.9" width="5.6" height="5.6" rx="1.3" />
+                <rect x="11.9" y="11.9" width="5.6" height="5.6" rx="1.3" />
+              </svg>
+            </span>
+            <div class="title-block">
+              <h1 class="app-title">Hands-off Dashboard</h1>
+              <p class="subtitle">Only projects with a handoff · Sort by created or last activity</p>
+            </div>
+          </div>
+
+          <div class="generated">
+            Data generated <strong><time datetime="2026-11-03T23:35">2026-11-03 23:35</time></strong>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="controls" id="controls">
+            <span class="toolbar-label">Sort</span>
+            <div class="segmented" role="group" aria-label="Sort by">
+              <button class="sort-button" type="button" data-sort="created" aria-pressed="true">Created</button>
+              <button class="sort-button" type="button" data-sort="lastActivity" aria-pressed="false">Last activity</button>
+            </div>
+            <button class="direction-button" id="directionButton" type="button" aria-label="Sorted descending. Switch to ascending.">
+              <svg class="od-icon icon-arrow sort-arrow" id="sortArrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 3v10M4.5 9.5 8 13l3.5-3.5" />
+              </svg>
+              <span id="directionLabel">Descending</span>
+            </button>
+          </div>
+
+          <span class="count-pill" id="projectCount">7 projects</span>
+        </div>
+      </header>
+
+      <main class="board-area">
+        <div class="board-panel">
+          <div
+            class="board-scroller"
+            id="boardScroller"
+            role="region"
+            aria-label="Project list, horizontally scrollable"
+            tabindex="0"
+          >
+            <div class="board" id="board"></div>
+            <noscript>
+              <p class="no-script">Enable JavaScript to view the project board.</p>
+            </noscript>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <p class="sr-only" id="status" role="status" aria-live="polite"></p>
+
+  <script>
+    const PIN_STORAGE_KEY = 'project-board:pinned:v1';
+
+    const PROJECTS = [
+      {
+        id: 'fanqie',
+        name: '番茄专注',
+        why: '我喜欢一边听 B 站音乐合集一边学习，本来也在用番茄钟，想把这两件事合成一件——用音乐代替钟表来计时。',
+        stages: ['Opendesign 交互原型', '可安装自用', '核心功能稳定', '自用顺手', '数据可迁移'],
+        current: '自用顺手',
+        evidence: '番茄专注-1.1.4.apk（versionCode 6，可直接安装到真机）',
+        gate: '1.1.4 的进度恢复在真机上验证通过',
+        next: '手机 USB 连上后 adb install -r 番茄专注-1.1.4.apk，专注中途把 App 从后台划掉再打开，确认首页显示「已暂停 · 继续专注」且进度从原位接着走',
+        nextDetermined: true,
+        created: '2026-11-03',
+        lastActivity: '2026-11-03',
+        audience: '我自己（单机自用，明确不上架）',
+        blocker: '1.1.4 新增的进度存档只做过离线单测，真机未验证'
+      },
+      {
+        id: 'musicclock',
+        name: 'MusicClock',
+        why: '因为我喜欢一边听 B 站上的音乐合集一边学习，也一直在用番茄钟。把音乐和计时合在一起，做成一个能用音乐代替钟表计时的番茄钟。',
+        stages: ['交互原型', '可安装自用', '真机验证', '核心功能稳定', '数据可迁移'],
+        current: '真机验证',
+        evidence: '已有 1.1.1 APK 和真机验证',
+        gate: '自动化回归跑通',
+        next: '补跑 .tmp/regression.js 18 项，并确认后台恢复后的音频位置一致',
+        nextDetermined: true,
+        created: '2026-10-28',
+        lastActivity: '2026-11-02'
+      },
+      {
+        id: 'reading',
+        name: '阅读摘录',
+        why: '想把每天读到的句子留下来，之后写作时能按主题翻回去，而不是散落在不同 app 里。',
+        stages: ['结构设计', '导入流程', '主题索引', '搜索校验'],
+        current: null,
+        evidence: null,
+        gate: '搜索索引稳定',
+        next: '补上按主题筛选的索引测试',
+        nextDetermined: true,
+        created: '2026-10-20',
+        lastActivity: '2026-10-31'
+      },
+      {
+        id: 'travel',
+        name: '旅行手账',
+        why: '每次旅行回来，照片和花销散在相册、备忘录和账单里。想用一页时间线把一次旅行收在一起。',
+        stages: ['素材归档', '路线整理', '时间线排版', '导出'],
+        current: '路线整理',
+        evidence: '已导入两次旅行的照片与账单',
+        gate: null,
+        next: null,
+        nextDetermined: false,
+        created: '2026-09-18',
+        lastActivity: '2026-10-29'
+      },
+      {
+        id: 'notes',
+        name: '灵感收集',
+        why: '把临时想到的句子和链接先丢进同一个收件箱，周末再整理成能执行的想法。',
+        stages: ['收件箱', '分类', '回顾'],
+        current: '分类',
+        evidence: '已收进 120 条未整理记录',
+        gate: '分类规则稳定',
+        next: '先按来源分三组，再试运行一次周末回顾',
+        nextDetermined: true,
+        created: '2026-10-12',
+        lastActivity: '2026-10-27'
+      },
+      {
+        id: 'weekly',
+        name: '周报助手',
+        why: '每周五整理进展要花掉半小时，想把固定格式的周报自动化，保留需要自己判断的部分。',
+        stages: ['数据整理', '模板打磨', '自动生成'],
+        current: '模板打磨',
+        evidence: '已有三个月的周报样本',
+        gate: '模板字段不再变化',
+        next: '用最近四周数据跑一次完整生成',
+        nextDetermined: true,
+        created: '2026-09-02',
+        lastActivity: '2026-10-24'
+      },
+      {
+        id: 'desk',
+        name: '桌面整理',
+        why: null,
+        stages: ['规则梳理', '分类脚本', '试运行', '日常使用', '收尾'],
+        current: '规则梳理',
+        evidence: null,
+        gate: null,
+        next: '把下载目录的临时文件规则写进脚本并试运行',
+        nextDetermined: true,
+        created: null,
+        lastActivity: null
+      }
+    ];
+
+    const board = document.getElementById('board');
+    const boardScroller = document.getElementById('boardScroller');
+    const projectCount = document.getElementById('projectCount');
+    const controls = document.getElementById('controls');
+    const directionButton = document.getElementById('directionButton');
+    const directionLabel = document.getElementById('directionLabel');
+    const sortArrow = document.getElementById('sortArrow');
+    const status = document.getElementById('status');
+
+    const state = {
+      sortField: 'created',
+      direction: 'desc',
+      pinned: loadPinned(),
+      emptyPreview: new URLSearchParams(window.location.search).get('state') === 'empty'
+    };
+
+    let twoFingerGesture = null;
+    let suppressClickUntil = 0;
+
+    function loadPinned() {
+      let stored = null;
+      try {
+        stored = window.localStorage.getItem(PIN_STORAGE_KEY);
+      } catch (error) {
+        stored = null;
+      }
+
+      if (stored === null) {
+        return new Set(['fanqie']);
+      }
+
+      try {
+        const parsed = JSON.parse(stored);
+        return new Set(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        return new Set();
+      }
+    }
+
+    function savePinned() {
+      try {
+        window.localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify([...state.pinned]));
+      } catch (error) {
+        // The in-memory Set still keeps the current interaction working.
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[character]));
+    }
+
+    function dateValue(value) {
+      if (!value) return null;
+      const timestamp = Date.parse(`${value}T00:00:00`);
+      return Number.isNaN(timestamp) ? null : timestamp;
+    }
+
+    function currentStageIndex(project) {
+      if (!project.current || !Array.isArray(project.stages)) return -1;
+      return project.stages.indexOf(project.current);
+    }
+
+    function stageProgress(project) {
+      const index = currentStageIndex(project);
+      const total = Array.isArray(project.stages) ? project.stages.length : 0;
+      if (index < 0 || total === 0) return '';
+      return `${index + 1}/${total}`;
+    }
+
+    function sortedProjects() {
+      if (state.emptyPreview) return [];
+
+      return [...PROJECTS].sort((a, b) => {
+        const aPinned = state.pinned.has(a.id);
+        const bPinned = state.pinned.has(b.id);
+        if (aPinned !== bPinned) return aPinned ? -1 : 1;
+
+        const aDate = dateValue(a[state.sortField]);
+        const bDate = dateValue(b[state.sortField]);
+
+        if (aDate === null && bDate === null) {
+          return a.name.localeCompare(b.name, 'zh-CN');
+        }
+        if (aDate === null) return 1;
+        if (bDate === null) return -1;
+
+        const difference = aDate - bDate;
+        return state.direction === 'asc' ? difference : -difference;
+      });
+    }
+
+    function pinIcon() {
+      return `
+        <svg class="od-icon icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path class="pin-head" d="M9 4h6l-.55 4.6 3.05 2.55v1.35H6.5V11.15l3.05-2.55L9 4Z" />
+          <path d="M12 12.5V20" />
+        </svg>
+      `;
+    }
+
+    function arrowIcon() {
+      return `
+        <svg class="od-icon icon-arrow action-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 8h10M9.5 4.5 13 8l-3.5 3.5" />
+        </svg>
+      `;
+    }
+
+    function warningIcon() {
+      return `
+        <svg class="od-icon icon-warning" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="10" cy="10" r="7.2" />
+          <path d="M10 6.2v4.4" />
+          <path d="M10 13.6h.01" />
+        </svg>
+      `;
+    }
+
+    function chevronIcon() {
+      return `
+        <svg class="od-icon icon-chevron chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m4 6 4 4 4-4" />
+        </svg>
+      `;
+    }
+
+    function progressMarkup(project) {
+      if (!project.current) {
+        return `<p class="stage-name placeholder" aria-label="Stage not defined">Stage not defined</p>`;
+      }
+
+      const count = stageProgress(project);
+      const countMarkup = count ? `<span class="stage-count">${escapeHtml(count)}</span>` : '';
+      return `
+        <div class="stage-line">
+          <p class="stage-name" title="${escapeHtml(project.current)}" lang="zh-CN">${escapeHtml(project.current)}</p>
+          ${countMarkup}
+        </div>
+      `;
+    }
+
+    function nextMarkup(project) {
+      if (project.nextDetermined === false) {
+        return `
+          <div class="undetermined">
+            ${warningIcon()}
+            <span>Next step undecided</span>
+          </div>
+        `;
+      }
+
+      const gateMarkup = project.gate
+        ? `<p class="gate" title="${escapeHtml(project.gate)}" lang="zh-CN">${escapeHtml(project.gate)}</p>`
+        : '';
+
+      if (!project.next) {
+        return `${gateMarkup}<p class="next-action is-placeholder"><span class="action-text">Next step not defined</span></p>`;
+      }
+
+      return `
+        ${gateMarkup}
+        <div class="next-action">
+          ${project.gate ? arrowIcon() : ''}
+          <span class="action-text" title="${escapeHtml(project.next)}" lang="zh-CN">${escapeHtml(project.next)}</span>
+        </div>
+      `;
+    }
+
+    function footerMarkup(project) {
+      const hasLast = Boolean(project.lastActivity);
+      const hasCreated = Boolean(project.created);
+
+      if (!hasLast && !hasCreated) {
+        return `<span class="time-item placeholder">Dates not recorded</span>`;
+      }
+
+      const last = hasLast
+        ? `<span class="time-item">Last activity <time datetime="${escapeHtml(project.lastActivity)}">${escapeHtml(project.lastActivity)}</time></span>`
+        : `<span class="time-item placeholder">Last activity not recorded</span>`;
+
+      const created = hasCreated
+        ? `<span class="time-item">Created <time datetime="${escapeHtml(project.created)}">${escapeHtml(project.created)}</time></span>`
+        : `<span class="time-item placeholder">Created not recorded</span>`;
+
+      return `${last}<span class="footer-sep" aria-hidden="true">·</span>${created}`;
+    }
+
+    function projectMarkup(project) {
+      const isPinned = state.pinned.has(project.id);
+      const pinLabel = isPinned ? `Unpin ${project.name}` : `Pin ${project.name}`;
+      const titleId = `project-title-${project.id}`;
+      const whyId = `why-${project.id}`;
+      const titleMarkup = `
+        <span class="title-track">
+          <span class="title-text">${escapeHtml(project.name)}</span>
+          <span class="title-text" aria-hidden="true">${escapeHtml(project.name)}</span>
+        </span>
+      `;
+      const whyToggle = project.why
+        ? `
+          <button
+            class="why-toggle"
+            type="button"
+            hidden
+            aria-expanded="false"
+            aria-controls="${whyId}"
+            aria-label="Show full why"
+            title="Show full why"
+          >
+            ${chevronIcon()}
+          </button>
+        `
+        : '';
+      const whyMarkup = project.why
+        ? `
+          <div class="why-wrap">
+            <p class="why" id="${whyId}" title="${escapeHtml(project.why)}" lang="zh-CN">${escapeHtml(project.why)}</p>
+            ${whyToggle}
+          </div>
+        `
+        : `<p class="why placeholder">Why not provided</p>`;
+
+      const evidenceMarkup = project.evidence
+        ? `<p class="evidence" title="${escapeHtml(project.evidence)}" lang="zh-CN">${escapeHtml(project.evidence)}</p>`
+        : `<p class="evidence placeholder">No evidence recorded</p>`;
+
+      return `
+        <article class="project" aria-labelledby="${titleId}">
+          <div class="project-head">
+            <h2 class="project-title" id="${titleId}" title="${escapeHtml(project.name)}" lang="zh-CN">${titleMarkup}</h2>
+            <button
+              class="pin"
+              type="button"
+              data-pin-id="${escapeHtml(project.id)}"
+              aria-pressed="${isPinned}"
+              aria-label="${escapeHtml(pinLabel)}"
+              title="${escapeHtml(pinLabel)}"
+            >
+              ${pinIcon()}
+            </button>
+          </div>
+
+          ${whyMarkup}
+
+          <section class="block" aria-label="Stage progress">
+            <p class="block-label">Stage</p>
+            ${progressMarkup(project)}
+            ${evidenceMarkup}
+          </section>
+
+          <section class="block" aria-label="Next step">
+            <p class="block-label">Next step</p>
+            ${nextMarkup(project)}
+          </section>
+
+          <footer class="project-footer">
+            ${footerMarkup(project)}
+          </footer>
+        </article>
+      `;
+    }
+
+    function emptyMarkup() {
+      return `
+        <div class="empty-state">
+          <div class="empty-mark" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3.5h8l4 4v17H8z" />
+              <path d="M16 3.5v4h4" />
+              <path d="M11 13h6M11 17h4" />
+            </svg>
+          </div>
+          <h2 class="empty-title">No projects to show</h2>
+          <p class="empty-copy">No project folders with a readable handoff were found. Folders without a handoff are not shown.</p>
+        </div>
+      `;
+    }
+
+    function updateControls() {
+      document.querySelectorAll('.sort-button').forEach((button) => {
+        const selected = button.dataset.sort === state.sortField;
+        button.setAttribute('aria-pressed', String(selected));
+      });
+
+      const isAscending = state.direction === 'asc';
+      directionLabel.textContent = isAscending ? 'Ascending' : 'Descending';
+      sortArrow.classList.toggle('is-ascending', isAscending);
+      directionButton.setAttribute(
+        'aria-label',
+        isAscending
+          ? 'Sorted ascending. Switch to descending.'
+          : 'Sorted descending. Switch to ascending.'
+      );
+    }
+
+    function setupCardOverflow() {
+      document.querySelectorAll('.project').forEach((card) => {
+        const title = card.querySelector('.project-title');
+        if (title) {
+          const track = title.querySelector('.title-track');
+          const firstText = title.querySelector('.title-text');
+          if (track && firstText) {
+            title.classList.remove('is-scrolling');
+            track.style.removeProperty('--title-shift');
+            track.style.removeProperty('--title-duration');
+
+            const overflows = firstText.scrollWidth > title.clientWidth + 1;
+            if (overflows) {
+              const gap = 32;
+              const shift = firstText.scrollWidth + gap;
+              track.style.setProperty('--title-shift', `${shift}px`);
+              track.style.setProperty('--title-duration', `${Math.max(8, shift / 30)}s`);
+              title.classList.add('is-scrolling');
+            }
+          }
+        }
+
+        const why = card.querySelector('.why');
+        const toggle = card.querySelector('.why-toggle');
+        if (!why || !toggle) return;
+
+        if (toggle.getAttribute('aria-expanded') === 'true') {
+          toggle.hidden = false;
+          return;
+        }
+
+        toggle.hidden = why.scrollHeight <= why.clientHeight + 1;
+      });
+    }
+
+    function render() {
+      const projects = sortedProjects();
+      const isEmpty = projects.length === 0;
+
+      projectCount.textContent = `${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`;
+      controls.hidden = isEmpty;
+      board.classList.toggle('is-empty', isEmpty);
+      board.innerHTML = isEmpty ? emptyMarkup() : projects.map(projectMarkup).join('');
+      updateControls();
+      window.requestAnimationFrame(setupCardOverflow);
+    }
+
+    function focusPin(projectId) {
+      window.requestAnimationFrame(() => {
+        const nextPin = document.querySelector(`.pin[data-pin-id="${projectId}"]`);
+        if (nextPin) nextPin.focus();
+      });
+    }
+
+    board.addEventListener('click', (event) => {
+      if (Date.now() < suppressClickUntil) {
+        event.preventDefault();
+        return;
+      }
+
+      const whyToggle = event.target.closest('.why-toggle');
+      if (whyToggle) {
+        const why = document.getElementById(whyToggle.getAttribute('aria-controls'));
+        if (!why) return;
+
+        const expanded = whyToggle.getAttribute('aria-expanded') === 'true';
+        const nextExpanded = !expanded;
+        const nextLabel = nextExpanded ? 'Show less' : 'Show full why';
+
+        why.classList.toggle('is-expanded', nextExpanded);
+        whyToggle.setAttribute('aria-expanded', String(nextExpanded));
+        whyToggle.setAttribute('aria-label', nextLabel);
+        whyToggle.title = nextLabel;
+        return;
+      }
+
+      const pin = event.target.closest('.pin');
+      if (!pin) return;
+
+      const projectId = pin.dataset.pinId;
+      const project = PROJECTS.find((item) => item.id === projectId);
+      if (!project) return;
+
+      const wasPinned = state.pinned.has(projectId);
+      if (wasPinned) {
+        state.pinned.delete(projectId);
+      } else {
+        state.pinned.add(projectId);
+      }
+
+      savePinned();
+      render();
+      focusPin(projectId);
+      status.textContent = `${wasPinned ? 'Unpinned' : 'Pinned'} ${project.name}`;
+    });
+
+    document.querySelectorAll('.sort-button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextField = button.dataset.sort;
+        if (state.sortField === nextField) return;
+        state.sortField = nextField;
+        render();
+        status.textContent = `Sorted by ${nextField === 'created' ? 'created' : 'last activity'}, ${state.direction === 'asc' ? 'ascending' : 'descending'}`;
+      });
+    });
+
+    directionButton.addEventListener('click', () => {
+      state.direction = state.direction === 'asc' ? 'desc' : 'asc';
+      render();
+      status.textContent = `Sorted by ${state.sortField === 'created' ? 'created' : 'last activity'}, ${state.direction === 'asc' ? 'ascending' : 'descending'}`;
+    });
+
+    boardScroller.addEventListener('wheel', (event) => {
+      if (event.ctrlKey) return;
+      if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+
+      const card = event.target.closest('.project');
+      if (card) {
+        const canScrollVertically = card.scrollHeight > card.clientHeight + 1;
+        if (canScrollVertically) {
+          const atTop = card.scrollTop <= 0;
+          const atBottom = card.scrollTop + card.clientHeight >= card.scrollHeight - 1;
+          if ((event.deltaY < 0 && !atTop) || (event.deltaY > 0 && !atBottom)) {
+            return;
+          }
+        }
+      }
+
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : 1);
+      event.preventDefault();
+      boardScroller.scrollLeft += delta;
+    }, { passive: false });
+
+    function touchCenter(touches) {
+      const first = touches[0];
+      const second = touches[1];
+      return {
+        x: (first.clientX + second.clientX) / 2,
+        y: (first.clientY + second.clientY) / 2
+      };
+    }
+
+    boardScroller.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 2) {
+        twoFingerGesture = null;
+        return;
+      }
+
+      const center = touchCenter(event.touches);
+      const target = document.elementFromPoint(center.x, center.y);
+      const card = target ? target.closest('.project') : null;
+
+      twoFingerGesture = {
+        startX: center.x,
+        startY: center.y,
+        axis: null,
+        startBoardScroll: boardScroller.scrollLeft,
+        card,
+        startCardScroll: card ? card.scrollTop : 0
+      };
+    }, { passive: true });
+
+    boardScroller.addEventListener('touchmove', (event) => {
+      if (!twoFingerGesture || event.touches.length !== 2) return;
+
+      const center = touchCenter(event.touches);
+      const dx = center.x - twoFingerGesture.startX;
+      const dy = center.y - twoFingerGesture.startY;
+
+      if (!twoFingerGesture.axis) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        twoFingerGesture.axis = Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical';
+      }
+
+      event.preventDefault();
+      suppressClickUntil = Date.now() + 300;
+
+      if (twoFingerGesture.axis === 'horizontal') {
+        boardScroller.scrollLeft = twoFingerGesture.startBoardScroll - dx;
+      } else if (twoFingerGesture.card) {
+        twoFingerGesture.card.scrollTop = twoFingerGesture.startCardScroll - dy;
+      }
+    }, { passive: false });
+
+    boardScroller.addEventListener('touchend', (event) => {
+      if (event.touches.length < 2) twoFingerGesture = null;
+    });
+
+    boardScroller.addEventListener('touchcancel', () => {
+      twoFingerGesture = null;
+    });
+
+    let cardOverflowFrame = 0;
+    window.addEventListener('resize', () => {
+      window.cancelAnimationFrame(cardOverflowFrame);
+      cardOverflowFrame = window.requestAnimationFrame(setupCardOverflow);
+    });
+
+    render();
+  </script>
+</body>
+</html>
