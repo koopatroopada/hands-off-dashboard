@@ -12,8 +12,9 @@ $RECYCLE.BIN/
 *.swo
 *~
 
-# ---- WorkBuddy 本地工作区数据（会话、记忆、临时缓存）----
+# ---- WorkBuddy 本地工作区数据（会话、记忆、临时缓存、应用发布标记）----
 .workbuddy/
+*.genie
 *.artifact.json
 
 # ---- 依赖与构建产物（当前为纯静态页面，预留）----
