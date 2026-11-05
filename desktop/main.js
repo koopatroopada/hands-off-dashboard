@@ -68,7 +68,6 @@ try {
     SetWindowPos: user32.func(
       'bool __stdcall SetWindowPos(uint64 hWnd, uint64 hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags)'
     ),
-    GetAsyncKeyState: user32.func('short __stdcall GetAsyncKeyState(int vKey)'),
     FindWindowW: user32.func('uint64 __stdcall FindWindowW(str16 lpClassName, str16 lpWindowName)'),
     IsWindowVisible: user32.func('bool __stdcall IsWindowVisible(uint64 hWnd)'),
     IsIconic: user32.func('bool __stdcall IsIconic(uint64 hWnd)'),
@@ -165,7 +164,6 @@ function writeState(patch) {
 
 let win = null;
 let httpServer = null;
-let dragTimer = null;
 
 const DEFAULT_WIDTH = 1000;
 const DEFAULT_HEIGHT = 660;
@@ -196,7 +194,7 @@ async function boot() {
     backgroundColor: '#00000000',
     hasShadow: false,
     skipTaskbar: true,
-    focusable: false, // 点击不激活 → 不会把自己顶到最前
+    focusable: process.env.HS_FOCUSABLE === '0' ? false : true,
     resizable: true,
     movable: true,
     minimizable: false,
@@ -242,6 +240,16 @@ async function boot() {
   win.on('moved', persistBounds);
   win.on('resized', persistBounds);
 
+  // 窗口必须可聚焦，否则收不到 pointerdown：
+  // Windows 上 focusable:false 等价于 WS_EX_NOACTIVATE，Chromium 会丢掉按下事件，
+  // 只派发 pointerup，还伴随一串假的 mouseleave——拖动、点空白关菜单、拖滑条
+  // 全都依赖 pointerdown，于是三个功能一起失灵。
+  // 代价是点击会激活窗口并把它提到 Z 序前面，这里一旦收到焦点就立刻压回桌面层。
+  win.on('focus', () => {
+    if (DEBUG_TOPMOST || SKIP_ATTACH) return;
+    pinToBottom(win);
+  });
+
   // 兜底：万一仍被最小化（Win+D / 显示桌面），立刻恢复
   win.on('minimize', () => {
     console.log('[desktop] 收到最小化事件，立即恢复');
@@ -285,71 +293,55 @@ ipcMain.handle('desktop:set-opacity', (_event, payload) => {
   return patch;
 });
 
-ipcMain.on('desktop:drag-start', () => {
-  if (!win || win.isDestroyed()) return;
+/* ── 拖动 ───────────────────────────────────────────────────── */
 
-  const originCursor = screen.getCursorScreenPoint();
-  // 尺寸只在拖动开始时取一次，之后每帧都带上同样的宽高：
-  // 只调 setPosition 在 150% 缩放下会被反复取整，窗口会越拖越大。
-  // 取整是有意为之：Electron 的 DIP 尺寸是物理像素 / 缩放比，直接回写小数会持续漂移。
-  const origin = win.getBounds();
-  origin.x = Math.round(origin.x);
-  origin.y = Math.round(origin.y);
-  origin.width = Math.round(origin.width);
-  origin.height = Math.round(origin.height);
+let dragOrigin = null;
 
-  clearInterval(dragTimer);
-  dragTimer = setInterval(() => {
-    if (!win || win.isDestroyed()) {
-      clearInterval(dragTimer);
-      dragTimer = null;
-      return;
-    }
-
-    // 鼠标左键松开就结束；主进程轮询全局光标，鼠标移出窗口也不会中断拖动
-    if (api && api.GetAsyncKeyState && (api.GetAsyncKeyState(0x01) & 0x8000) === 0) {
-      stopDrag();
-      return;
-    }
-
-    const cursor = screen.getCursorScreenPoint();
-    const nextX = origin.x + (cursor.x - originCursor.x);
-    const nextY = origin.y + (cursor.y - originCursor.y);
-
-    if (api) {
-      // 用 Win32 只挪位置（SWP_NOSIZE + SWP_NOZORDER）：
-      // Electron 的 setBounds 每次都要在 DIP 与物理像素之间换算，150% 缩放下会累积取整误差，
-      // 连拖几次窗口就会悄悄变大
-      const scale = screen.getDisplayNearestPoint(cursor).scaleFactor || 1;
-      api.SetWindowPos(
-        hwndOf(win),
-        0n,
-        Math.round(nextX * scale),
-        Math.round(nextY * scale),
-        0,
-        0,
-        SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
-      );
-    } else {
-      win.setBounds({ x: nextX, y: nextY, width: origin.width, height: origin.height });
-    }
-  }, 16);
+ipcMain.on('desktop:drag-start', (_event, point) => {
+  if (!win || win.isDestroyed() || !point) return;
+  const [wx, wy] = win.getPosition();
+  console.log('[desktop] drag-start', wx, wy, point.screenX, point.screenY);
+  dragOrigin = {
+    winX: Math.round(wx),
+    winY: Math.round(wy),
+    screenX: point.screenX,
+    screenY: point.screenY
+  };
 });
 
-function stopDrag() {
-  clearInterval(dragTimer);
-  dragTimer = null;
+ipcMain.on('desktop:drag-move', (_event, point) => {
+  if (!win || win.isDestroyed() || !dragOrigin || !point) return;
+
+  const nextX = Math.round(dragOrigin.winX + (point.screenX - dragOrigin.screenX));
+  const nextY = Math.round(dragOrigin.winY + (point.screenY - dragOrigin.screenY));
+
+  if (api) {
+    // 只挪坐标（SWP_NOSIZE | SWP_NOZORDER）：
+    // Electron 的 setBounds 每次都要在 DIP 与物理像素之间换算，
+    // 150% 缩放下会累积取整误差，连拖几次窗口会悄悄变大（实测每次 +9×15 DIP）
+    const scale = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).scaleFactor || 1;
+    api.SetWindowPos(
+      hwndOf(win),
+      0n,
+      Math.round(nextX * scale),
+      Math.round(nextY * scale),
+      0,
+      0,
+      SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
+    );
+  } else {
+    win.setPosition(nextX, nextY);
+  }
+});
+
+ipcMain.on('desktop:drag-end', () => {
+  if (dragOrigin) console.log('[desktop] drag-end');
+  dragOrigin = null;
   if (!win || win.isDestroyed()) return;
   const [wx, wy] = win.getPosition();
   const [ww, wh] = win.getSize();
   writeState({ x: Math.round(wx), y: Math.round(wy), width: Math.round(ww), height: Math.round(wh) });
   pinToBottom(win);
-  // 通知渲染层清掉拖动状态：鼠标在窗口外松开时它收不到 pointerup
-  if (!win.webContents.isDestroyed()) win.webContents.send('desktop:drag-finished');
-}
-
-ipcMain.on('desktop:drag-end', () => {
-  if (dragTimer) stopDrag();
 });
 
 ipcMain.on('desktop:quit', () => {
@@ -389,7 +381,6 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();
-    clearInterval(dragTimer);
     if (httpServer) httpServer.close();
   });
 

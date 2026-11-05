@@ -5,15 +5,13 @@
  * 1. 注入「透明窗口」所需样式（原 index.html 一行不改，全部用覆盖实现）
  * 2. 把两层不透明度写进 CSS 变量并持久化
  * 3. 右键面板：两个滑块 + 退出；单击面板外任意位置即关闭
- * 4. 拖动：按住任意非控件区域（卡片、留白都可）挪动窗口，
- *    位移超过阈值才算拖动，普通单击仍然照常触发页面交互
+ * 4. 拖动：用 CSS 的 -webkit-app-region 交给系统原生拖动
  */
 
 const { ipcRenderer } = require('electron');
 
 const STYLE_ID = 'hs-desktop-style';
 const PANEL_ID = 'hs-desktop-panel';
-const DRAG_THRESHOLD = 4;
 
 const DEFAULTS = { shellOpacity: 1, cardOpacity: 0.56 };
 
@@ -21,8 +19,6 @@ let settings = { ...DEFAULTS };
 let panel = null;
 let panelOpen = false;
 let sliderActive = false;
-let pendingDrag = null; // { x, y }
-let dragging = false;
 
 /* ── 透明样式 ─────────────────────────────────────────────── */
 
@@ -58,12 +54,6 @@ const OVERRIDE_CSS = `
 
   /* 抽屉自带不透明底，打开时保持可读 */
   .drawer { background: rgba(255, 255, 255, 0.97) !important; }
-
-  /* 拖动时光标提示 */
-  .hs-dragging, .hs-dragging * {
-    cursor: grabbing !important;
-    user-select: none !important;
-  }
 
   /* ── 右键面板 ── */
   #${PANEL_ID} {
@@ -271,27 +261,25 @@ function closePanel() {
 
 /* ── 拖动窗口 ─────────────────────────────────────────────── */
 
-// 真正需要独占鼠标的控件不参与拖动；其余（卡片、留白、标题）都可以按下拖动
-const INTERACTIVE = 'button, a, input, select, textarea, [role="button"], .doc-link, .why-toggle, .pin, .sort-button, .drawer';
+// 需要独占鼠标手势的控件：滑条之类不能一边拖控件一边拖窗口。
+// 其余位置（卡片、标题、留白）一律可拖——是不是拖动交给位移阈值去判，
+// 不要用选择器黑名单，否则卡片里几乎每个像素都被某个 a/button 盖住，等于全卡不可拖。
+const NO_DRAG = 'input, select, textarea';
 
-function startDrag() {
-  pendingDrag = null;
-  dragging = true;
-  document.documentElement.classList.add('hs-dragging');
-  ipcRenderer.send('desktop:drag-start');
-}
+let dragOrigin = null; // { screenX, screenY }
+let dragging = false; // 已经越过阈值
+let suppressClick = false; // 拖完松手的那一次 click 要吃掉
+let lastSent = 0;
 
 function endDrag() {
-  if (!dragging) return;
-  dragging = false;
-  document.documentElement.classList.remove('hs-dragging');
+  if (!dragOrigin) return;
+  dragOrigin = null;
+  if (dragging) {
+    dragging = false;
+    suppressClick = true;
+    document.documentElement.style.cursor = '';
+  }
   ipcRenderer.send('desktop:drag-end');
-}
-
-function resetDrag() {
-  dragging = false;
-  pendingDrag = null;
-  document.documentElement.classList.remove('hs-dragging');
 }
 
 function bindInteractions() {
@@ -308,16 +296,18 @@ function bindInteractions() {
       if (panelOpen) closePanel();
 
       if (event.button !== 0) return;
-      if (event.target.closest(INTERACTIVE)) return;
+      if (event.target.closest(NO_DRAG)) return;
+      // 抽屉打开时优先保证正文里能选字、滚动
+      if (event.target.closest('.drawer.is-open')) return;
 
-      // 上一次拖动若在窗口外松开，状态可能残留，这里先复位
-      if (dragging) resetDrag();
-
-      // 关键：不做这一步，按下后会进入浏览器的「拖选文本」，
+      // 不拦默认行为的话，按下后会进入浏览器的「拖选文本」，
       // 浏览器随即派发 pointercancel，拖动刚起步就被取消（还会把看板横向滚偏）
       event.preventDefault();
 
-      pendingDrag = { x: event.clientX, y: event.clientY };
+      // 用 screenX/screenY 而不是 clientX/clientY：窗口跟着鼠标移动，
+      // 指针相对窗口的位置几乎不变，只有屏幕坐标才反映真实位移
+      dragOrigin = { screenX: event.screenX, screenY: event.screenY };
+      lastSent = event.timeStamp;
     },
     true
   );
@@ -325,39 +315,60 @@ function bindInteractions() {
   document.addEventListener(
     'pointermove',
     (event) => {
-      if (dragging) return; // 拖动中由主进程轮询光标，更平滑
-      if (!pendingDrag) return;
+      if (!dragOrigin) return;
       if ((event.buttons & 1) === 0) {
-        pendingDrag = null;
+        endDrag();
         return;
       }
-      const dx = event.clientX - pendingDrag.x;
-      const dy = event.clientY - pendingDrag.y;
-      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
-      startDrag();
+
+      if (!dragging) {
+        // 阈值以下当作点击，超过才真正开始搬窗口
+        const dx = event.screenX - dragOrigin.screenX;
+        const dy = event.screenY - dragOrigin.screenY;
+        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+        dragging = true;
+        document.documentElement.style.cursor = 'grabbing';
+        ipcRenderer.send('desktop:drag-start', dragOrigin);
+      }
+
+      // 高频指针事件下适当节流，避免每 1ms 一次 IPC
+      if (event.timeStamp - lastSent < 16) return;
+      lastSent = event.timeStamp;
+      ipcRenderer.send('desktop:drag-move', {
+        screenX: event.screenX,
+        screenY: event.screenY
+      });
     },
     true
   );
 
   const release = () => {
-    pendingDrag = null;
     sliderActive = false;
     endDrag();
   };
   document.addEventListener('pointerup', release, true);
   document.addEventListener('pointercancel', release, true);
 
-  // 拖动窗口时不要触发浏览器原生拖拽（图片/链接被拖走会很怪）
-  document.addEventListener('dragstart', (event) => event.preventDefault());
+  // 拖动结束时那一下 click 不该再触发卡片上的链接
+  document.addEventListener(
+    'click',
+    (event) => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      event.stopPropagation();
+      event.preventDefault();
+    },
+    true
+  );
 
   document.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     openPanel(event.clientX, event.clientY);
   });
 
-  // 窗口不激活、也收不到 blur，鼠标离开窗口即视为点了外面
+  // 鼠标离开组件即视为点了外面（窗口可能没激活、收不到 blur）
   document.addEventListener('mouseleave', () => {
-    if (dragging || sliderActive) return;
+    if (sliderActive) return;
     closePanel();
   });
 
@@ -366,8 +377,6 @@ function bindInteractions() {
   });
 
   window.addEventListener('resize', closePanel);
-
-  ipcRenderer.on('desktop:drag-finished', resetDrag);
 }
 
 /* ── 初始化 ───────────────────────────────────────────────── */
