@@ -4,20 +4,25 @@
  * 桌面组件的渲染侧桥接：
  * 1. 注入「透明窗口」所需样式（原 index.html 一行不改，全部用覆盖实现）
  * 2. 把两层不透明度写进 CSS 变量并持久化
- * 3. 右键面板：两个滑块 + 退出
- * 4. 拖动：把鼠标位移交给主进程挪窗口（focusable:false 下系统拖动不可用）
+ * 3. 右键面板：两个滑块 + 退出；单击面板外任意位置即关闭
+ * 4. 拖动：按住任意非控件区域（卡片、留白都可）挪动窗口，
+ *    位移超过阈值才算拖动，普通单击仍然照常触发页面交互
  */
 
 const { ipcRenderer } = require('electron');
 
 const STYLE_ID = 'hs-desktop-style';
 const PANEL_ID = 'hs-desktop-panel';
+const DRAG_THRESHOLD = 4;
 
 const DEFAULTS = { shellOpacity: 1, cardOpacity: 0.56 };
 
 let settings = { ...DEFAULTS };
 let panel = null;
 let panelOpen = false;
+let sliderActive = false;
+let pendingDrag = null; // { x, y }
+let dragging = false;
 
 /* ── 透明样式 ─────────────────────────────────────────────── */
 
@@ -55,10 +60,14 @@ const OVERRIDE_CSS = `
   .drawer { background: rgba(255, 255, 255, 0.97) !important; }
 
   /* 拖动时光标提示 */
-  .hs-dragging, .hs-dragging * { cursor: grabbing !important; }
+  .hs-dragging, .hs-dragging * {
+    cursor: grabbing !important;
+    user-select: none !important;
+  }
 
   /* ── 右键面板 ── */
   #${PANEL_ID} {
+    display: none;
     position: fixed;
     z-index: 2147483000;
     width: 244px;
@@ -73,6 +82,7 @@ const OVERRIDE_CSS = `
     line-height: 1.5;
     letter-spacing: -0.01em;
     user-select: none;
+    pointer-events: auto;
   }
 
   #${PANEL_ID} .hs-kicker {
@@ -80,15 +90,15 @@ const OVERRIDE_CSS = `
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.48);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   #${PANEL_ID} .hs-row {
     display: grid;
-    grid-template-columns: 34px 1fr 36px;
+    grid-template-columns: 32px 1fr 38px;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 9px;
+    gap: 10px;
+    margin-bottom: 2px;
   }
 
   #${PANEL_ID} .hs-label { color: rgba(255, 255, 255, 0.72); }
@@ -99,15 +109,23 @@ const OVERRIDE_CSS = `
     color: rgba(255, 255, 255, 0.9);
   }
 
+  /* 轨道只有 4px，但控件本身留足 20px 高度，滑块才好按住 */
   #${PANEL_ID} input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
+    display: block;
     width: 100%;
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.2);
+    height: 20px;
+    margin: 0;
+    background: transparent;
     outline: none;
     cursor: pointer;
+  }
+
+  #${PANEL_ID} input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
   }
 
   #${PANEL_ID} input[type="range"]::-webkit-slider-thumb {
@@ -115,6 +133,7 @@ const OVERRIDE_CSS = `
     appearance: none;
     width: 13px;
     height: 13px;
+    margin-top: -4.5px;
     border-radius: 50%;
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.2);
@@ -123,13 +142,13 @@ const OVERRIDE_CSS = `
 
   #${PANEL_ID} .hs-divider {
     height: 1px;
-    margin: 11px 0 9px;
+    margin: 10px 0 9px;
     background: rgba(255, 255, 255, 0.12);
   }
 
   #${PANEL_ID} .hs-hint {
     font-size: 11px;
-    line-height: 1.6;
+    line-height: 1.65;
     color: rgba(255, 255, 255, 0.46);
   }
 
@@ -184,25 +203,25 @@ function buildPanel() {
   el.id = PANEL_ID;
   el.innerHTML = `
     <div class="hs-kicker">外观</div>
-    <label class="hs-row">
+    <div class="hs-row">
       <span class="hs-label">外壳</span>
-      <input type="range" min="0" max="100" step="1" data-key="shellOpacity" />
+      <input type="range" min="0" max="100" step="1" data-key="shellOpacity" aria-label="外壳不透明度" />
       <span class="hs-value" data-out="shellOpacity"></span>
-    </label>
-    <label class="hs-row">
+    </div>
+    <div class="hs-row">
       <span class="hs-label">卡片</span>
-      <input type="range" min="0" max="100" step="1" data-key="cardOpacity" />
+      <input type="range" min="0" max="100" step="1" data-key="cardOpacity" aria-label="卡片不透明度" />
       <span class="hs-value" data-out="cardOpacity"></span>
-    </label>
+    </div>
     <div class="hs-divider"></div>
-    <div class="hs-hint">空白处按住可拖动窗口<br />Ctrl+Alt+H 隐藏 · Ctrl+Alt+Q 退出</div>
+    <div class="hs-hint">按住卡片或空白处可拖动窗口<br />单击空白 / 右键再次点击可关闭本菜单<br />Ctrl+Alt+H 隐藏 · Ctrl+Alt+Q 退出</div>
     <button type="button" class="hs-quit">退出组件</button>
   `;
 
   el.querySelectorAll('input[type="range"]').forEach((input) => {
     const key = input.dataset.key;
-    input.value = String(Math.round(settings[key] * 100));
     const out = el.querySelector(`[data-out="${key}"]`);
+    input.value = String(Math.round(settings[key] * 100));
     out.textContent = `${input.value}%`;
 
     input.addEventListener('input', () => {
@@ -211,26 +230,18 @@ function buildPanel() {
       applyOpacity();
     });
     input.addEventListener('change', persist);
+    input.addEventListener('pointerdown', () => {
+      sliderActive = true;
+    });
   });
 
   el.querySelector('.hs-quit').addEventListener('click', () => {
     ipcRenderer.send('desktop:quit');
   });
 
-  el.addEventListener('mousedown', (event) => event.stopPropagation());
   el.addEventListener('contextmenu', (event) => event.preventDefault());
 
   document.body.appendChild(el);
-
-  // 同步滑块到当前值（面板可能被反复创建）
-  const sync = () => {
-    el.querySelectorAll('input[type="range"]').forEach((input) => {
-      const key = input.dataset.key;
-      input.value = String(Math.round(settings[key] * 100));
-      el.querySelector(`[data-out="${key}"]`).textContent = `${input.value}%`;
-    });
-  };
-  sync();
 
   return el;
 }
@@ -253,32 +264,110 @@ function openPanel(x, y) {
 }
 
 function closePanel() {
-  if (!panel) return;
+  if (!panel || !panelOpen) return;
   panel.style.display = 'none';
   panelOpen = false;
 }
 
 /* ── 拖动窗口 ─────────────────────────────────────────────── */
 
-const NO_DRAG = 'button, a, input, select, textarea, [role="button"], .board-scroller, .board-panel, .project';
+// 真正需要独占鼠标的控件不参与拖动；其余（卡片、留白、标题）都可以按下拖动
+const INTERACTIVE = 'button, a, input, select, textarea, [role="button"], .doc-link, .why-toggle, .pin, .sort-button, .drawer';
 
-function bindDrag() {
-  document.addEventListener('mousedown', (event) => {
-    if (event.button !== 0) return;
-    if (event.target.closest(NO_DRAG)) return;
-    if (event.target.closest(`#${PANEL_ID}`)) return;
+function startDrag() {
+  pendingDrag = null;
+  dragging = true;
+  document.documentElement.classList.add('hs-dragging');
+  ipcRenderer.send('desktop:drag-start');
+}
 
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  document.documentElement.classList.remove('hs-dragging');
+  ipcRenderer.send('desktop:drag-end');
+}
+
+function resetDrag() {
+  dragging = false;
+  pendingDrag = null;
+  document.documentElement.classList.remove('hs-dragging');
+}
+
+function bindInteractions() {
+  document.addEventListener(
+    'pointerdown',
+    (event) => {
+      const inPanel = event.target.closest(`#${PANEL_ID}`);
+      if (inPanel) {
+        if (event.target.matches('input[type="range"]')) sliderActive = true;
+        return;
+      }
+
+      // 面板外任何一次按下（含右键）都先把菜单收起来
+      if (panelOpen) closePanel();
+
+      if (event.button !== 0) return;
+      if (event.target.closest(INTERACTIVE)) return;
+
+      // 上一次拖动若在窗口外松开，状态可能残留，这里先复位
+      if (dragging) resetDrag();
+
+      // 关键：不做这一步，按下后会进入浏览器的「拖选文本」，
+      // 浏览器随即派发 pointercancel，拖动刚起步就被取消（还会把看板横向滚偏）
+      event.preventDefault();
+
+      pendingDrag = { x: event.clientX, y: event.clientY };
+    },
+    true
+  );
+
+  document.addEventListener(
+    'pointermove',
+    (event) => {
+      if (dragging) return; // 拖动中由主进程轮询光标，更平滑
+      if (!pendingDrag) return;
+      if ((event.buttons & 1) === 0) {
+        pendingDrag = null;
+        return;
+      }
+      const dx = event.clientX - pendingDrag.x;
+      const dy = event.clientY - pendingDrag.y;
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      startDrag();
+    },
+    true
+  );
+
+  const release = () => {
+    pendingDrag = null;
+    sliderActive = false;
+    endDrag();
+  };
+  document.addEventListener('pointerup', release, true);
+  document.addEventListener('pointercancel', release, true);
+
+  // 拖动窗口时不要触发浏览器原生拖拽（图片/链接被拖走会很怪）
+  document.addEventListener('dragstart', (event) => event.preventDefault());
+
+  document.addEventListener('contextmenu', (event) => {
     event.preventDefault();
-    document.documentElement.classList.add('hs-dragging');
-    ipcRenderer.send('desktop:drag-start');
-
-    const stop = () => {
-      document.documentElement.classList.remove('hs-dragging');
-      ipcRenderer.send('desktop:drag-end');
-      window.removeEventListener('mouseup', stop);
-    };
-    window.addEventListener('mouseup', stop);
+    openPanel(event.clientX, event.clientY);
   });
+
+  // 窗口不激活、也收不到 blur，鼠标离开窗口即视为点了外面
+  document.addEventListener('mouseleave', () => {
+    if (dragging || sliderActive) return;
+    closePanel();
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closePanel();
+  });
+
+  window.addEventListener('resize', closePanel);
+
+  ipcRenderer.on('desktop:drag-finished', resetDrag);
 }
 
 /* ── 初始化 ───────────────────────────────────────────────── */
@@ -297,25 +386,7 @@ async function init() {
   }
 
   applyOpacity();
-  bindDrag();
-
-  document.addEventListener('contextmenu', (event) => {
-    event.preventDefault();
-    openPanel(event.clientX, event.clientY);
-  });
-
-  document.addEventListener('mousedown', (event) => {
-    if (!panelOpen) return;
-    if (event.target.closest(`#${PANEL_ID}`)) return;
-    closePanel();
-  });
-
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && panelOpen) closePanel();
-  });
-
-  window.addEventListener('blur', () => closePanel());
-  window.addEventListener('resize', () => closePanel());
+  bindInteractions();
 }
 
 if (document.readyState === 'loading') {
