@@ -3,14 +3,18 @@
 /**
  * Hands-off Dashboard · 桌面组件主进程
  *
- * 目标形态：无边框、背景透明、真正「属于桌面」（Win+D 显示桌面时不会被收起），
- * 被普通窗口自然盖住，点击不会把自己顶到前面，右键可调两层不透明度。
+ * 目标形态：无边框、背景透明、贴在桌面层（被普通窗口自然盖住、点击不抢焦点），
+ * 右键可调两层不透明度。
  *
  * 层级实现说明：
- * Electron 没有「桌面层」API。这里用 Win32 的 SetParent 把窗口挂到 Progman
- * （桌面窗口）下面，使其成为桌面的子窗口——子窗口不会参与 Win+D 的最小化，
- * 也就不会被「显示桌面」收走。挂载失败时退回 SetWindowPos(HWND_BOTTOM) +
- * 最小化兜底。
+ * Electron 没有「桌面层」API。这里用 Win32 的 SetWindowPos(hwnd, HWND_BOTTOM)
+ * 把窗口压到最底层，再用定时器每 600ms 归位一次。
+ *
+ * 曾经试过 SetParent 把窗口挂成 Progman（桌面）的子窗口，好处是 Win+D 收不走，
+ * 但 Chromium 的透明合成只对顶层窗口生效——变成子窗口后 alpha 通道直接失效，
+ * 半透明的区域会被渲染成一块不透明的深灰底，等于没有透明。桌面组件一旦不能
+ * 透出壁纸就失去意义，因此放弃子窗口方案，改为「顶层窗口 + 轮询救回」：
+ * Win+D 把窗口最小化后，下一次轮询（≤600ms）立刻原样还原并压回底部。
  */
 
 const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron');
@@ -41,21 +45,16 @@ function migrateLegacyState() {
 
 /* ── Win32 ─────────────────────────────────────────────────── */
 
-const HWND_TOP = 0n;
 const HWND_BOTTOM = 1n;
 
 const SWP_NOSIZE = 0x0001;
 const SWP_NOMOVE = 0x0002;
 const SWP_NOZORDER = 0x0004;
 const SWP_NOACTIVATE = 0x0010;
-const SWP_SHOWWINDOW = 0x0040;
 
-const GWL_STYLE = -16;
-const WS_CHILD = 0x40000000n;
-const WS_POPUP = 0x80000000n;
-const GA_PARENT = 1;
+const SW_RESTORE = 9;
+const SW_SHOWNOACTIVATE = 4;
 
-const USE_CHILD_STYLE = process.env.HS_DESKTOP_CHILD === '1';
 const SKIP_ATTACH = process.env.HS_NO_ATTACH === '1';
 // 调试用：把窗口置顶，方便在没有桌面遮挡的情况下验证交互
 const DEBUG_TOPMOST = process.env.HS_TOPMOST === '1';
@@ -71,11 +70,9 @@ try {
     ),
     GetAsyncKeyState: user32.func('short __stdcall GetAsyncKeyState(int vKey)'),
     FindWindowW: user32.func('uint64 __stdcall FindWindowW(str16 lpClassName, str16 lpWindowName)'),
-    SetParent: user32.func('uint64 __stdcall SetParent(uint64 hWndChild, uint64 hWndNewParent)'),
-    GetAncestor: user32.func('uint64 __stdcall GetAncestor(uint64 hWnd, uint gaFlags)'),
-    GetWindowLongPtrW: user32.func('int64 __stdcall GetWindowLongPtrW(uint64 hWnd, int nIndex)'),
-    SetWindowLongPtrW: user32.func('int64 __stdcall SetWindowLongPtrW(uint64 hWnd, int nIndex, int64 dwNewLong)'),
-    GetLastError: koffi.load('kernel32.dll').func('uint __stdcall GetLastError()')
+    IsWindowVisible: user32.func('bool __stdcall IsWindowVisible(uint64 hWnd)'),
+    IsIconic: user32.func('bool __stdcall IsIconic(uint64 hWnd)'),
+    ShowWindow: user32.func('bool __stdcall ShowWindow(uint64 hWnd, int nCmdShow)')
   };
 } catch (error) {
   console.error('[desktop] 无法加载 user32.dll，窗口将保持在普通窗口层：', error.message);
@@ -90,89 +87,54 @@ function hwndOf(win) {
 /** koffi 的 64 位返回值可能是 number 也可能是 BigInt，统一成 BigInt 再比较 */
 const asHwnd = (value) => (typeof value === 'bigint' ? value : BigInt(Math.trunc(Number(value) || 0)));
 
-let progmanHwnd = 0n;
-let attached = false;
-
 function findProgman() {
   if (!api) return 0n;
   return asHwnd(api.FindWindowW('Progman', null));
 }
 
 /**
- * 取窗口的父窗口。
- * 注意不能用 GetParent：窗口没有 WS_CHILD 时它返回的是 owner（恒为 0），
- * 会让人误判成「没挂上桌面」。GetAncestor(GA_PARENT) 才是真正的父窗口。
+ * 贴在桌面之上、所有普通窗口之下。
+ *
+ * 不能用 HWND_BOTTOM：那是 Z 序的最底端，会把窗口塞到桌面窗口背后，
+ * 于是壁纸把它整个盖住，看起来就是「组件不见了」。
+ * 正确做法是把 Progman（桌面窗口）当参照物，插到它上面一层。
+ * 找不到 Progman（资源管理器重启中）时退回 HWND_BOTTOM，下一轮再纠正。
  */
-function desktopParentOf(hwnd) {
-  if (!api) return 0n;
-  return asHwnd(api.GetAncestor(hwnd, GA_PARENT));
-}
-
-/** 在自己所在的父窗口内提到最上层：盖住桌面图标层，但不越过普通窗口 */
-function raiseOnDesktop(win) {
-  if (!api || !win || win.isDestroyed()) return;
-  try {
-    api.SetWindowPos(hwndOf(win), HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-  } catch {
-    /* 窗口销毁瞬间忽略 */
-  }
-}
-
 function pinToBottom(win) {
   if (!api || !win || win.isDestroyed()) return;
   try {
-    api.SetWindowPos(hwndOf(win), HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+    const anchor = findProgman() || HWND_BOTTOM;
+    // SWP_NOACTIVATE：只调整层级，不抢焦点
+    api.SetWindowPos(hwndOf(win), anchor, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
   } catch {
     /* 窗口销毁瞬间忽略 */
   }
 }
 
-/** 把窗口挂到桌面（Progman）下面，返回是否成功 */
-function attachToDesktop(win) {
-  if (!api || !win || win.isDestroyed()) return false;
-
-  const hwnd = hwndOf(win);
-  const progman = findProgman();
-  if (!progman) return false;
-  progmanHwnd = progman;
-
-  if (desktopParentOf(hwnd) === progman) {
-    raiseOnDesktop(win);
-    return true;
-  }
-
-  api.SetParent(hwnd, progman);
-  if (desktopParentOf(hwnd) !== progman) {
-    console.log('[desktop] SetParent 失败，错误码：', api.GetLastError(), 'hwnd=', hwnd, 'progman=', progman);
-    return false;
-  }
-
-  if (USE_CHILD_STYLE) {
-    // 真正的子窗口样式：Win+D 属于「最小化所有顶层窗口」，管不到子窗口
-    const style = api.GetWindowLongPtrW(hwnd, GWL_STYLE);
-    api.SetWindowLongPtrW(hwnd, GWL_STYLE, (style | WS_CHILD) & ~WS_POPUP);
-  }
-
-  raiseOnDesktop(win);
-  return true;
-}
-
+/**
+ * 每 600ms 归位一次：
+ * 1. 万一被外部强制最小化或隐藏（「显示桌面」类工具、资源管理器重启），
+ *    原样还原——窗口本身是 minimizable:false，Win+D 一般动不了它
+ * 2. 被其他窗口顶上来时，重新插回桌面之上、普通窗口之下
+ */
 function keepOnDesktop(win) {
   if (!win || win.isDestroyed() || DEBUG_TOPMOST) return;
 
-  if (attached) {
-    const hwnd = hwndOf(win);
-    // 资源管理器重启/桌面重建后父窗口会失效，需要重新挂载
-    if (!api || desktopParentOf(hwnd) !== progmanHwnd) {
-      attached = attachToDesktop(win);
-      if (!attached) {
-        console.log('[desktop] 桌面挂载丢失，退回底层窗口');
-        pinToBottom(win);
+  const hwnd = hwndOf(win);
+  if (api) {
+    try {
+      if (api.IsIconic(hwnd)) {
+        console.log('[desktop] 被最小化（Win+D），还原');
+        api.ShowWindow(hwnd, SW_RESTORE);
+        win.showInactive();
+      } else if (!api.IsWindowVisible(hwnd)) {
+        console.log('[desktop] 被隐藏，重新显示');
+        api.ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+        win.showInactive();
       }
-      return;
+    } catch {
+      /* 窗口销毁瞬间忽略 */
     }
-    raiseOnDesktop(win);
-    return;
   }
 
   pinToBottom(win);
@@ -258,9 +220,8 @@ async function boot() {
   // 可能已经触发过，once 就再也等不到了
   win.once('ready-to-show', () => {
     win.showInactive();
-    attached = SKIP_ATTACH || DEBUG_TOPMOST ? false : attachToDesktop(win);
-    console.log('[desktop] 桌面挂载：', attached ? 'Progman 子窗口' : '退回底层窗口');
-    if (!attached && !DEBUG_TOPMOST) pinToBottom(win);
+    if (!SKIP_ATTACH && !DEBUG_TOPMOST) pinToBottom(win);
+    console.log('[desktop] 启动完成（顶层窗口 + 贴底）');
   });
 
   await win.loadURL(url);
@@ -290,8 +251,8 @@ async function boot() {
     keepOnDesktop(win);
   });
 
-  // 定时归位：层级被意外改动、或资源管理器重建桌面时自动修正
-  const keeper = setInterval(() => keepOnDesktop(win), 1500);
+  // 定时归位：Win+D 被收走、层级被意外改动、资源管理器重建桌面时自动修正
+  const keeper = setInterval(() => keepOnDesktop(win), 600);
   keeper.unref?.();
 
   win.on('closed', () => {
@@ -308,7 +269,7 @@ ipcMain.handle('desktop:bootstrap', () => {
     shellOpacity: Number.isFinite(saved.shellOpacity) ? saved.shellOpacity : 1,
     cardOpacity: Number.isFinite(saved.cardOpacity) ? saved.cardOpacity : 0.56,
     version: app.getVersion(),
-    desktopLayer: attached
+    desktopLayer: !!api && !DEBUG_TOPMOST
   };
 });
 
@@ -382,7 +343,7 @@ function stopDrag() {
   const [wx, wy] = win.getPosition();
   const [ww, wh] = win.getSize();
   writeState({ x: Math.round(wx), y: Math.round(wy), width: Math.round(ww), height: Math.round(wh) });
-  if (attached) raiseOnDesktop(win);
+  pinToBottom(win);
   // 通知渲染层清掉拖动状态：鼠标在窗口外松开时它收不到 pointerup
   if (!win.webContents.isDestroyed()) win.webContents.send('desktop:drag-finished');
 }

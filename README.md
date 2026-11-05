@@ -96,7 +96,9 @@ Last-Activity: 2026-11-04
 
 双击 `start-desktop.bat`，或 `npm run desktop`。
 
-它是一个**无边框透明窗口**，用 `SetParent` 挂进桌面窗口（Progman）成为桌面的子窗口：被普通窗口盖住，只在你回到桌面时露出来；按 `Win+D` 显示桌面时**不会**被收走（子窗口不属于「最小化所有顶层窗口」的范围）。不占任务栏、不抢焦点。
+它是一个**无边框透明窗口**，层级插在桌面窗口（Progman）之上、所有普通窗口之下：被窗口盖住，回到桌面时露出来，不占任务栏、不抢焦点，也不会被 `Win+D` / `Win+M` 收走（窗口声明了 `minimizable: false`，且每 600 ms 归位一次）。
+
+> 前提是**必须保持顶层窗口**。半透明能透出壁纸，靠的是 Chromium 对顶层窗口的 alpha 合成；一旦变成桌面子窗口，alpha 通道直接失效，透明区域会被画成一块不透明的深灰底——看起来就是「调低不透明度后画面变灰」。
 
 **怎么用**
 
@@ -112,23 +114,24 @@ Last-Activity: 2026-11-04
 
 右键面板里的两个滑块各自独立：
 
-- **外壳**：整个窗口底色。调到 0 就只剩文字和边框，完全透出壁纸；默认 100%（与网页版一致）。
+- **外壳**：整个窗口的白色底。往下拉就是真的变透明，桌面壁纸会直接透出来；默认 100%（与网页版一致）。
 - **卡片**：单张项目卡的底色。默认 56%，等于原型里的 `--glass` 毛玻璃。
 
 两个值存在 `%APPDATA%/hands-off-dashboard/desktop-state.json`，下次启动沿用。
 
 **实现要点（改之前务必先读）**
 
-1. **挂进桌面才挡得住 `Win+D`**。Electron 没有「桌面层」API，Windows 的桌面小工具平台在 Win8 就废弃了。只调 `SetWindowPos(hwnd, HWND_BOTTOM)` 压到底是不够的：`Win+D` 会最小化所有顶层窗口，组件照样消失（它甚至不会收到 `minimize` 事件，所以「最小化就恢复」这条路也走不通）。正解是 `SetParent(hwnd, FindWindow('Progman'))`，让它变成桌面的子窗口。挂上之后每 1.5 s 用 `HWND_TOP` 在自己所在父窗口里提到最上层（盖住桌面图标层，但不会越过普通窗口），同时兼作资源管理器重启后的自动重挂。
-2. **父窗口要用 `GetAncestor(hwnd, GA_PARENT)` 判断，不能用 `GetParent`**。窗口没有 `WS_CHILD` 样式时 `GetParent` 返回的是 owner（恒为 0），会被误判成「没挂上」，于是每 1.5 s 往桌面最底层压——表现为组件在桌面上凭空消失。
-3. **`focusable: false` 是必须的**。它等价于 `WS_EX_NOACTIVATE`：点击窗口不会激活它，也就不会弹到最前。没有这一条，点一下卡片窗口就会跳到所有窗口上面。
-4. **HWND 必须用 BigInt 传**。`koffi` 里把 `getNativeWindowHandle()` 的 Buffer 直接当指针传会静默失败（返回 `false`），要先 `readBigUInt64LE` 转成 BigInt。
-5. **拖动不要在 `pointerdown` 里放过默认行为**。不 `preventDefault()` 的话，按下后会进入浏览器的「拖选文本」，浏览器紧接着派发 `pointercancel`，拖动刚起步就被取消；而且拖选还会把看板横向滚偏。
-6. **拖动要用 `SetWindowPos(..., SWP_NOSIZE | SWP_NOZORDER)` 只改坐标**。`win.setBounds()` 每次都要在 DIP 与物理像素之间换算，150% 缩放下会累积取整误差——连拖几次窗口就会悄悄变大（实测每次 +5 DIP）。
-7. **`ELECTRON_RUN_AS_NODE` 会让整个方案失灵**。某些 IDE 终端会设这个变量，Electron 会退化成纯 Node 运行，`require('electron')` 拿不到 `app` / `BrowserWindow`，报错是 `Cannot read properties of undefined (reading 'handle')`。`start-desktop.bat` 里已经把它和 `NODE_OPTIONS` 清空。
-8. **事件要在 `loadURL` 之前注册**。`await win.loadURL()` 返回时 `ready-to-show` 和 `did-finish-load` 可能已经触发过，之后再挂 `once` 永远等不到，窗口就不会显示。
+1. **必须保持顶层窗口，只有这样透明才有效**。Electron 没有「桌面层」API，Windows 的桌面小工具平台在 Win8 就废弃了，只能用 `SetWindowPos` 手动排 Z 序。**关键是插入位置**：`HWND_BOTTOM` 是 Z 序最底端，会把窗口塞到桌面窗口（Progman）背后，壁纸把它整个盖住，表现是「组件完全不见了」；正确做法是 `SetWindowPos(hwnd, FindWindow('Progman'), ...)`，插到桌面之上、其他窗口之下。
+2. **不要用 `SetParent` 挂进桌面**。这条路能让 `Win+D` 彻底收不走，但 Chromium 的透明合成只对顶层窗口生效，变成子窗口后 alpha 直接失效：把外壳不透明度拉到 0，露出来的是不透明的深灰底而不是壁纸。桌面组件不能透出壁纸就没有意义，所以宁可保留顶层窗口 + 定时归位。另外 `minimizable: false` 已经让 `Win+D` / `Win+M` 都最小化不动它。
+3. **父窗口判断不能用 `GetParent`**（如果哪天又要怀疑层级）。窗口没有 `WS_CHILD` 时它返回的是 owner（恒为 0），会误判成「没挂上」；要用 `GetAncestor(hwnd, GA_PARENT)`。这条坑是在 `SetParent` 方案里踩到的，留作记录。
+4. **`focusable: false` 是必须的**。它等价于 `WS_EX_NOACTIVATE`：点击窗口不会激活它，也就不会弹到最前。没有这一条，点一下卡片窗口就会跳到所有窗口上面。
+5. **HWND 必须用 BigInt 传**。`koffi` 里把 `getNativeWindowHandle()` 的 Buffer 直接当指针传会静默失败（返回 `false`），要先 `readBigUInt64LE` 转成 BigInt。
+6. **拖动不要在 `pointerdown` 里放过默认行为**。不 `preventDefault()` 的话，按下后会进入浏览器的「拖选文本」，浏览器紧接着派发 `pointercancel`，拖动刚起步就被取消；而且拖选还会把看板横向滚偏。
+7. **拖动要用 `SetWindowPos(..., SWP_NOSIZE | SWP_NOZORDER)` 只改坐标**。`win.setBounds()` 每次都要在 DIP 与物理像素之间换算，150% 缩放下会累积取整误差——连拖几次窗口就会悄悄变大（实测每次 +5 DIP）。
+8. **`ELECTRON_RUN_AS_NODE` 会让整个方案失灵**。某些 IDE 终端会设这个变量，Electron 会退化成纯 Node 运行，`require('electron')` 拿不到 `app` / `BrowserWindow`，报错是 `Cannot read properties of undefined (reading 'handle')`。`start-desktop.bat` 里已经把它和 `NODE_OPTIONS` 清空。
+9. **事件要在 `loadURL` 之前注册**。`await win.loadURL()` 返回时 `ready-to-show` 和 `did-finish-load` 可能已经触发过，之后再挂 `once` 永远等不到，窗口就不会显示。
 
-调试开关：`HS_NO_ATTACH=1` 跳过桌面挂载（用于对比），`HS_TOPMOST=1` 置顶显示（其他窗口挡住时也能点）。
+调试开关：`HS_NO_ATTACH=1` 跳过贴底（窗口浮在最上层，用于对比透明效果），`HS_TOPMOST=1` 置顶显示（其他窗口挡住时也能点）。
 
 **它和网页版的差别**
 
@@ -171,7 +174,7 @@ lib/handoff.js     交接文档解析 + 项目发现
 config.json        根目录与项目清单
 start.bat          Windows 一键启动（网页版）
 start-desktop.bat  Windows 一键启动（桌面组件）
-desktop/main.js    桌面组件主进程：挂进桌面（Progman）、拖动、缩放、层级守护
+desktop/main.js    桌面组件主进程：贴桌面层（Progman 之上）、拖动、缩放、层级守护
 desktop/preload.js 透明化样式注入、右键面板、两层不透明度、拖动与菜单交互
 build-demo.js      把当前数据打包成静态快照（npm run build:demo）
 test/              node --test 单元测试（npm test）
