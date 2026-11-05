@@ -7,14 +7,19 @@
  * 右键可调两层不透明度。
  *
  * 层级实现说明：
- * Electron 没有「桌面层」API。这里用 Win32 的 SetWindowPos(hwnd, HWND_BOTTOM)
- * 把窗口压到最底层，再用定时器每 600ms 归位一次。
+ * Electron 没有「桌面层」API。这里用 Win32 把窗口插到「桌面窗口之上、
+ * 普通窗口之下」，再用 50ms 定时器盯着 Z 序、随时纠正。
+ *
+ * 两个坑（都实测过，别退回去）：
+ * 1. 不能用 HWND_BOTTOM，那是 Z 序最底端，窗口会跑到桌面窗口背后被壁纸盖住；
+ * 2. 不能用 Progman 本身当 SetWindowPos 的参照窗口——Win8 起窗口按 z-band
+ *    分组，跨 band 的插入请求返回 TRUE 但 Z 序不动。要用「紧挨在 Progman
+ *    之上的那个窗口」当锚点。
  *
  * 曾经试过 SetParent 把窗口挂成 Progman（桌面）的子窗口，好处是 Win+D 收不走，
  * 但 Chromium 的透明合成只对顶层窗口生效——变成子窗口后 alpha 通道直接失效，
  * 半透明的区域会被渲染成一块不透明的深灰底，等于没有透明。桌面组件一旦不能
- * 透出壁纸就失去意义，因此放弃子窗口方案，改为「顶层窗口 + 轮询救回」：
- * Win+D 把窗口最小化后，下一次轮询（≤600ms）立刻原样还原并压回底部。
+ * 透出壁纸就失去意义，因此放弃子窗口方案，改为「顶层窗口 + 定时巡护」。
  */
 
 const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron');
@@ -55,6 +60,9 @@ const SWP_NOACTIVATE = 0x0010;
 const SW_RESTORE = 9;
 const SW_SHOWNOACTIVATE = 4;
 
+const GW_HWNDNEXT = 2; // Z 序里下一个（更靠下）的窗口
+const GW_HWNDPREV = 3; // Z 序里上一个（更靠上）的窗口
+
 const SKIP_ATTACH = process.env.HS_NO_ATTACH === '1';
 // 调试用：把窗口置顶，方便在没有桌面遮挡的情况下验证交互
 const DEBUG_TOPMOST = process.env.HS_TOPMOST === '1';
@@ -69,6 +77,7 @@ try {
       'bool __stdcall SetWindowPos(uint64 hWnd, uint64 hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags)'
     ),
     FindWindowW: user32.func('uint64 __stdcall FindWindowW(str16 lpClassName, str16 lpWindowName)'),
+    GetWindow: user32.func('uint64 __stdcall GetWindow(uint64 hWnd, uint uCmd)'),
     IsWindowVisible: user32.func('bool __stdcall IsWindowVisible(uint64 hWnd)'),
     IsIconic: user32.func('bool __stdcall IsIconic(uint64 hWnd)'),
     ShowWindow: user32.func('bool __stdcall ShowWindow(uint64 hWnd, int nCmdShow)')
@@ -94,27 +103,47 @@ function findProgman() {
 /**
  * 贴在桌面之上、所有普通窗口之下。
  *
- * 不能用 HWND_BOTTOM：那是 Z 序的最底端，会把窗口塞到桌面窗口背后，
- * 于是壁纸把它整个盖住，看起来就是「组件不见了」。
- * 正确做法是把 Progman（桌面窗口）当参照物，插到它上面一层。
- * 找不到 Progman（资源管理器重启中）时退回 HWND_BOTTOM，下一轮再纠正。
+ * 参照物不能直接用 Progman（桌面窗口）。实测（Win10/11）以 Progman 作
+ * SetWindowPos 的 hWndInsertAfter 会返回 TRUE 却不动 Z 序——Win8 起窗口按
+ * z-band 分组，桌面窗口在自己的 band 里，跨 band 的插入请求被静默丢弃。
+ * 改用「Z 序上紧挨在 Progman 之上的那个窗口」作锚点：它与我们在同一个 band，
+ * 插入到它之后，落点就正好是「桌面之上、其他普通窗口之下」。
+ *
+ * 已经在位时直接返回（一次 GetWindow 比较），不产生多余调用。
  */
 function pinToBottom(win) {
   if (!api || !win || win.isDestroyed()) return;
   try {
-    const anchor = findProgman() || HWND_BOTTOM;
+    const hwnd = hwndOf(win);
+    const progman = findProgman();
+
+    if (!progman) {
+      // 资源管理器重启中，先压到底，下一轮再纠正
+      api.SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+      return;
+    }
+
+    // 紧贴在 Progman 之上 = 已经处于目标位置
+    if (asHwnd(api.GetWindow(hwnd, GW_HWNDNEXT)) === progman) return;
+
+    const anchor = asHwnd(api.GetWindow(progman, GW_HWNDPREV));
     // SWP_NOACTIVATE：只调整层级，不抢焦点
-    api.SetWindowPos(hwndOf(win), anchor, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+    api.SetWindowPos(hwnd, anchor, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
   } catch {
     /* 窗口销毁瞬间忽略 */
   }
 }
 
 /**
- * 每 600ms 归位一次：
+ * 每 50ms 检查一次：
  * 1. 万一被外部强制最小化或隐藏（「显示桌面」类工具、资源管理器重启），
- *    原样还原——窗口本身是 minimizable:false，Win+D 一般动不了它
- * 2. 被其他窗口顶上来时，重新插回桌面之上、普通窗口之下
+ *    原样还原——窗口声明了 minimizable:false，通常不会被最小化
+ * 2. Z 序被改动（典型是 Win+D：Progman 被提到所有普通窗口前面，
+ *    窗口随即掉到它后面、被壁纸盖住），重新插回桌面之上
+ *
+ * 50ms 而不是 600ms，是因为 Win+D 造成的错位只能事后纠正，
+ * 间隔直接决定「组件消失多久」。已在位时检查只是一次 GetWindow 比较，
+ * 每秒 20 次的量级对 CPU 没有可测影响，而 50ms 以内的空缺基本看不出来。
  */
 function keepOnDesktop(win) {
   if (!win || win.isDestroyed() || DEBUG_TOPMOST) return;
@@ -260,7 +289,7 @@ async function boot() {
   });
 
   // 定时归位：Win+D 被收走、层级被意外改动、资源管理器重建桌面时自动修正
-  const keeper = setInterval(() => keepOnDesktop(win), 600);
+  const keeper = setInterval(() => keepOnDesktop(win), 50);
   keeper.unref?.();
 
   win.on('closed', () => {

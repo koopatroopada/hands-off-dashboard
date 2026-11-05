@@ -96,7 +96,7 @@ Last-Activity: 2026-11-04
 
 双击 `start-desktop.bat`，或 `npm run desktop`。
 
-它是一个**无边框透明窗口**，层级插在桌面窗口（Progman）之上、所有普通窗口之下：被窗口盖住，回到桌面时露出来，不占任务栏、不抢焦点，也不会被 `Win+D` / `Win+M` 收走（窗口声明了 `minimizable: false`，且每 600 ms 归位一次）。
+它是一个**无边框透明窗口**，层级插在桌面窗口（Progman）之上、所有普通窗口之下：被窗口盖住，回到桌面时露出来，不占任务栏、不抢焦点；按 `Win+D` 时窗口不会被最小化，若被桌面窗口挤到背后，下一次巡护（≤50 ms）会把它排回桌面之上。
 
 > 前提是**必须保持顶层窗口**。半透明能透出壁纸，靠的是 Chromium 对顶层窗口的 alpha 合成；一旦变成桌面子窗口，alpha 通道直接失效，透明区域会被画成一块不透明的深灰底——看起来就是「调低不透明度后画面变灰」。
 
@@ -121,17 +121,19 @@ Last-Activity: 2026-11-04
 
 **实现要点（改之前务必先读）**
 
-1. **必须保持顶层窗口，只有这样透明才有效**。Electron 没有「桌面层」API，Windows 的桌面小工具平台在 Win8 就废弃了，只能用 `SetWindowPos` 手动排 Z 序。**关键是插入位置**：`HWND_BOTTOM` 是 Z 序最底端，会把窗口塞到桌面窗口（Progman）背后，壁纸把它整个盖住，表现是「组件完全不见了」；正确做法是 `SetWindowPos(hwnd, FindWindow('Progman'), ...)`，插到桌面之上、其他窗口之下。
-2. **不要用 `SetParent` 挂进桌面**。这条路能让 `Win+D` 彻底收不走，但 Chromium 的透明合成只对顶层窗口生效，变成子窗口后 alpha 直接失效：把外壳不透明度拉到 0，露出来的是不透明的深灰底而不是壁纸。桌面组件不能透出壁纸就没有意义，所以宁可保留顶层窗口 + 定时归位。另外 `minimizable: false` 已经让 `Win+D` / `Win+M` 都最小化不动它。
-3. **父窗口判断不能用 `GetParent`**（如果哪天又要怀疑层级）。窗口没有 `WS_CHILD` 时它返回的是 owner（恒为 0），会误判成「没挂上」；要用 `GetAncestor(hwnd, GA_PARENT)`。这条坑是在 `SetParent` 方案里踩到的，留作记录。
-4. **`focusable` 绝对不能设成 `false`**（这条最坑）。Windows 上它等价于 `WS_EX_NOACTIVATE`，Chromium 会**直接丢掉 `pointerdown`**：页面只收到 `pointerup`，还夹着一串假的 `mouseleave`。拖动、点空白关菜单、拖滑条全都以 `pointerdown` 为起点，于是三个功能一起失灵，而且 `preventDefault()` 也救不回来。代价是点击会激活窗口、把它提到 Z 序最前——在 `focus` 事件里立刻 `pinToBottom` 压回去即可。
-5. **可拖区域不要用选择器黑名单**。卡片的每个像素几乎都被某个 `a` / `button` 盖着，写 `INTERACTIVE` 白名单外的一律排除，结果等于整张卡片都拖不动。正确做法是全部允许拖，用**位移阈值**（4px）区分点击和拖动，拖动结束后把紧随其后的那次 `click` 拦掉。
-6. **HWND 必须用 BigInt 传**。`koffi` 里把 `getNativeWindowHandle()` 的 Buffer 直接当指针传会静默失败（返回 `false`），要先 `readBigUInt64LE` 转成 BigInt。
-7. **拖动位置要用屏幕坐标 `screenX/screenY`，不能用 `clientX/clientY`**。窗口跟着鼠标走，指针相对窗口的位置几乎不变，只有屏幕坐标才反映真实位移。
-8. **`preventDefault()` 不能省**。不拦的话按下后会进入浏览器的「拖选文本」，浏览器紧接着派发 `pointercancel`，拖动刚起步就被取消；而且拖选还会把看板横向滚偏。
-9. **移动窗口要用 `SetWindowPos(..., SWP_NOSIZE | SWP_NOZORDER)` 只改坐标**。`win.setBounds()` 每次都要在 DIP 与物理像素之间换算，150% 缩放下会累积取整误差——连拖几次窗口就会悄悄变大（实测每次 +9×15 DIP）。
-10. **`ELECTRON_RUN_AS_NODE` 会让整个方案失灵**。某些 IDE 终端会设这个变量，Electron 会退化成纯 Node 运行，`require('electron')` 拿不到 `app` / `BrowserWindow`，报错是 `Cannot read properties of undefined (reading 'handle')`。`start-desktop.bat` 里已经把它和 `NODE_OPTIONS` 清空。
-11. **事件要在 `loadURL` 之前注册**。`await win.loadURL()` 返回时 `ready-to-show` 和 `did-finish-load` 可能已经触发过，之后再挂 `once` 永远等不到，窗口就不会显示。
+1. **必须保持顶层窗口，只有这样透明才有效**。Electron 没有「桌面层」API，Windows 的桌面小工具平台在 Win8 就废弃了，只能用 `SetWindowPos` 手动排 Z 序。**参照物不能直接用 Progman**：`HWND_BOTTOM` 是 Z 序最底端，会把窗口塞到桌面背后被壁纸盖住；而 `SetWindowPos(hwnd, progman, ...)` 在 Win8+ 会**返回 TRUE 却不动 Z 序**——窗口按 z-band 分组，桌面窗口在自己的 band 里，跨 band 的插入请求被静默丢弃。正确锚点是「Z 序上紧挨在 Progman 之上的那个窗口」（`GetWindow(progman, GW_HWNDPREV)`），插到它之后，落点才是「桌面之上、普通窗口之下」。
+2. **`Win+D` 不是把组件最小化，而是把 Progman 提到所有普通窗口前面**。实测：按下后窗口 `IsIconic=false`、`IsWindowVisible=true`，只是 Z 序掉到 Progman 后面，于是壁纸把它盖住、命中测试返回 Progman——看起来就是「回到桌面时组件不见了」。这个错误只能事后纠正，所以巡护间隔从 600 ms 收紧到 50 ms，`pinToBottom` 先做一次 `GetWindow(hwnd, GW_HWNDNEXT) === progman` 比较，已在位就直接返回，不产生多余调用。
+3. **不要用 `SetParent` 挂进桌面**。这条路能让 `Win+D` 彻底收不走，但 Chromium 的透明合成只对顶层窗口生效，变成子窗口后 alpha 直接失效：把外壳不透明度拉到 0，露出来的是不透明的深灰底而不是壁纸。桌面组件不能透出壁纸就没有意义，所以宁可保留顶层窗口 + 定时巡护。`minimizable: false` 只能防止窗口被最小化，挡不住上面第 2 条的 Z 序变化。
+4. **未公开的 `SetWindowBand` 不要碰**。它能把窗口塞进桌面 band（`ZBID_DESKTOP=1`），但外部进程调用返回 `ERROR_ACCESS_DENIED`，只能由窗口所属进程调；实测即便调通，窗口也只是落到 Progman *之后*（被盖住），band 内的位置反而更难纠正。
+5. **父窗口判断不能用 `GetParent`**（如果哪天又要怀疑层级）。窗口没有 `WS_CHILD` 时它返回的是 owner（恒为 0），会误判成「没挂上」；要用 `GetAncestor(hwnd, GA_PARENT)`。这条坑是在 `SetParent` 方案里踩到的，留作记录。
+6. **`focusable` 绝对不能设成 `false`**（这条最坑）。Windows 上它等价于 `WS_EX_NOACTIVATE`，Chromium 会**直接丢掉 `pointerdown`**：页面只收到 `pointerup`，还夹着一串假的 `mouseleave`。拖动、点空白关菜单、拖滑条全都以 `pointerdown` 为起点，于是三个功能一起失灵，而且 `preventDefault()` 也救不回来。代价是点击会激活窗口、把它提到 Z 序最前——在 `focus` 事件里立刻 `pinToBottom` 压回去即可。
+7. **可拖区域不要用选择器黑名单**。卡片的每个像素几乎都被某个 `a` / `button` 盖着，写 `INTERACTIVE` 白名单外的一律排除，结果等于整张卡片都拖不动。正确做法是全部允许拖，用**位移阈值**（4px）区分点击和拖动，拖动结束后把紧随其后的那次 `click` 拦掉。
+8. **HWND 必须用 BigInt 传**。`koffi` 里把 `getNativeWindowHandle()` 的 Buffer 直接当指针传会静默失败（返回 `false`），要先 `readBigUInt64LE` 转成 BigInt。
+9. **拖动位置要用屏幕坐标 `screenX/screenY`，不能用 `clientX/clientY`**。窗口跟着鼠标走，指针相对窗口的位置几乎不变，只有屏幕坐标才反映真实位移。
+10. **`preventDefault()` 不能省**。不拦的话按下后会进入浏览器的「拖选文本」，浏览器紧接着派发 `pointercancel`，拖动刚起步就被取消；而且拖选还会把看板横向滚偏。
+11. **移动窗口要用 `SetWindowPos(..., SWP_NOSIZE | SWP_NOZORDER)` 只改坐标**。`win.setBounds()` 每次都要在 DIP 与物理像素之间换算，150% 缩放下会累积取整误差——连拖几次窗口就会悄悄变大（实测每次 +9×15 DIP）。
+12. **`ELECTRON_RUN_AS_NODE` 会让整个方案失灵**。某些 IDE 终端会设这个变量，Electron 会退化成纯 Node 运行，`require('electron')` 拿不到 `app` / `BrowserWindow`，报错是 `Cannot read properties of undefined (reading 'handle')`。`start-desktop.bat` 里已经把它和 `NODE_OPTIONS` 清空。
+13. **事件要在 `loadURL` 之前注册**。`await win.loadURL()` 返回时 `ready-to-show` 和 `did-finish-load` 可能已经触发过，之后再挂 `once` 永远等不到，窗口就不会显示。
 
 调试开关：`HS_NO_ATTACH=1` 跳过贴底（窗口浮在最上层，用于对比透明效果），`HS_TOPMOST=1` 置顶显示（其他窗口挡住时也能点）。
 
