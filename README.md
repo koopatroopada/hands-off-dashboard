@@ -94,7 +94,18 @@ Last-Activity: 2026-11-04
 
 ## 桌面组件
 
-双击 `start-desktop.bat`，或 `npm run desktop`。
+双击 `start-desktop.bat`、`npm run desktop`，或项目根目录的 **`安装快捷方式.bat`**（一次性配好，见下）。
+
+**快捷方式与开机自启**
+
+运行根目录的 `安装快捷方式.bat`（内部调 `scripts/install-shortcuts.ps1`）会创建两个快捷方式，均指向 `electron.exe` 并带 `desktop\main.js` 参数、使用 `assets/icon.ico` 图标（由 `scripts/make-icon.js` 生成，无外部依赖）：
+
+- 桌面「项目交接看板」——双击启动；重复双击无害，单实例锁会让第二次启动直接退出
+- 启动文件夹（`shell:startup`）同名快捷方式——开机自动出现在桌面
+
+取消开机自启：运行 `取消开机自启.bat`，或直接删除启动文件夹里的快捷方式。
+
+> 注意：快捷方式**必须直接指向 `electron.exe`**，不能经由设置了 `ELECTRON_RUN_AS_NODE` / `NODE_OPTIONS` 的终端启动——这两个变量（某些 IDE 会话会带）会让 Electron 退化成纯 Node，窗口出不来。`start-desktop.bat` 里已做清空；快捷方式走的是资源管理器的干净环境，不受影响。
 
 它是一个**无边框透明窗口**，层级插在桌面窗口（Progman）之上、所有普通窗口之下：被窗口盖住，回到桌面时露出来，不占任务栏、不抢焦点；按 `Win+D` 时窗口不会被最小化，若被桌面窗口挤到背后，下一次巡护（≤50 ms）会把它排回桌面之上。
 
