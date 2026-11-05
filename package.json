@@ -6,9 +6,16 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test test/handoff.test.js",
-    "build:demo": "node build-demo.js"
+    "build:demo": "node build-demo.js",
+    "desktop": "electron desktop/main.js"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "electron": "^45.2.3"
+  },
+  "dependencies": {
+    "koffi": "^3.3.6"
   }
 }

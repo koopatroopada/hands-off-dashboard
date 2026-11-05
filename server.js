@@ -173,9 +173,12 @@ function openBrowser(url) {
   spawn(command, [url], { detached: true, stdio: 'ignore' }).unref();
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  const config = await loadConfig(APP_DIR, args);
+/**
+ * 创建一个监听中的服务实例，供命令行与桌面组件共用。
+ * 返回 { server, port, config, url }，调用方负责 close。
+ */
+async function createServer(options = {}) {
+  const config = await loadConfig(APP_DIR, options);
   const server = http.createServer((req, res) => {
     handle(config, req, res).catch((error) => {
       if (!res.headersSent) sendJson(res, 500, { error: error.message });
@@ -183,7 +186,12 @@ async function main() {
   });
 
   const port = await listen(server, config.port);
-  const url = `http://127.0.0.1:${port}/`;
+  return { server, port, config, url: `http://127.0.0.1:${port}/` };
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const { server, config, url } = await createServer(args);
 
   console.log('');
   console.log('  Hands-off Dashboard');
@@ -202,7 +210,11 @@ async function main() {
   process.on('SIGTERM', shutdown);
 }
 
-main().catch((error) => {
-  console.error(`启动失败：${error.message}`);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`启动失败：${error.message}`);
+    process.exit(1);
+  });
+}
+
+module.exports = { createServer };

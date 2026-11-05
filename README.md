@@ -4,18 +4,23 @@
 
 ## 快速开始
 
-双击 `start.bat`。它会启动本地服务并自动打开浏览器。
+两种形态，按需选一个：
+
+**网页版**：双击 `start.bat`，起本地服务并打开浏览器。数据实时、功能完整，适合专心看板的时候。
+
+**桌面组件**：双击 `start-desktop.bat`，无边框半透明卡片贴在桌面最底层，不占任务栏、不抢焦点，写代码时瞥一眼就能看到下一步。首次运行会自动装 Electron（约 350 MB）。
 
 命令行等价写法：
 
 ```bash
-node server.js          # 或 npm start
+node server.js          # 网页版，或 npm start
 node server.js --no-open  # 只起服务不开浏览器
+npm run desktop         # 桌面组件
 ```
 
-默认地址 `http://127.0.0.1:4177/`，端口被占用时自动往后找。关闭命令行窗口即停止服务。
+网页版默认地址 `http://127.0.0.1:4177/`，端口被占用时自动往后找。关闭命令行窗口即停止服务。
 
-需要 Node.js 18 以上，**没有任何 npm 依赖**，不用 `npm install`。
+网页版需要 Node.js 18 以上，**没有任何 npm 依赖**。桌面组件需要额外安装 Electron（`npm install` 一次），它会自己起一个内部服务，不需要先跑 `start.bat`。
 
 ## 数据从哪来
 
@@ -87,6 +92,44 @@ Last-Activity: 2026-11-04
 
 这两条都是在真机等效的触摸事件模拟下逐项对比得出的，不是推测。
 
+## 桌面组件
+
+双击 `start-desktop.bat`，或 `npm run desktop`。
+
+它是一个**无边框透明窗口**，贴在桌面最底层：被普通窗口盖住，只在最小化窗口或点回桌面时露出来。不占任务栏、不抢焦点。
+
+**怎么用**
+
+| 操作 | 效果 |
+| --- | --- |
+| 空白处按住拖动 | 移动组件位置（位置和尺寸自动记住） |
+| 右键 | 打开外观面板：两个滑块 + 退出 |
+| `Ctrl+Alt+H` | 隐藏 / 显示 |
+| `Ctrl+Alt+Q` | 退出组件 |
+
+**两层不透明度**
+
+右键面板里的两个滑块各自独立：
+
+- **外壳**：整个窗口底色。调到 0 就只剩文字和边框，完全透出壁纸；默认 100%（与网页版一致）。
+- **卡片**：单张项目卡的底色。默认 56%，等于原型里的 `--glass` 毛玻璃。
+
+两个值存在 `%APPDATA%/hands-off-dashboard/desktop-state.json`，下次启动沿用。
+
+**实现要点（改之前务必先读）**
+
+1. **桌面层是 Win32 概念，Electron 没有现成 API**。Windows 的桌面小工具平台在 Win8 就废弃了，唯一办法是调 `user32.SetWindowPos(hwnd, HWND_BOTTOM)` 把窗口压到底，再用定时器（1.5 s）重新压一次防止被其他操作顶上来。
+2. **`focusable: false` 是必须的**。它等价于 `WS_EX_NOACTIVATE`：点击窗口不会激活它，也就不会弹到最前。没有这一条，点一下卡片窗口就会跳到所有窗口上面，贴底就白做了。
+3. **HWND 必须用 BigInt 传**。`koffi` 里把 `getNativeWindowHandle()` 的 Buffer 直接当指针传会静默失败（返回 `false`），要先 `readBigUInt64LE` 转成 BigInt。
+4. **`ELECTRON_RUN_AS_NODE` 会让整个方案失灵**。某些 IDE 终端会设这个变量，Electron 会退化成纯 Node 运行，`require('electron')` 拿不到 `app` / `BrowserWindow`，报错是 `Cannot read properties of undefined (reading 'handle')`。`start-desktop.bat` 里已经把它和 `NODE_OPTIONS` 清空。
+5. **事件要在 `loadURL` 之前注册**。`await win.loadURL()` 返回时 `ready-to-show` 和 `did-finish-load` 可能已经触发过，之后再挂 `once` 永远等不到，窗口就不会显示。
+
+**它和网页版的差别**
+
+- 数据仍读同一批 md 文件，但组件自己起一个内部服务（端口从 4177 往后找），不需要先跑 `start.bat`。
+- 页面本身一行没改，透明化和右键面板全部由 `desktop/preload.js` 用覆盖样式注入。
+- 网页版的抽屉、排序、置顶、滚动在组件里同样可用。
+
 ## 配置
 
 `config.json`：
@@ -117,10 +160,13 @@ Last-Activity: 2026-11-04
 
 ```
 index.html         单文件界面（内联 CSS/JS，无外部依赖）
-server.js          零依赖 HTTP 服务
+server.js          零依赖 HTTP 服务（命令行与桌面组件共用）
 lib/handoff.js     交接文档解析 + 项目发现
 config.json        根目录与项目清单
-start.bat          Windows 一键启动
+start.bat          Windows 一键启动（网页版）
+start-desktop.bat  Windows 一键启动（桌面组件）
+desktop/main.js    桌面组件主进程：透明置底窗口、拖动、缩放入口
+desktop/preload.js 透明化样式注入、右键面板、两层不透明度
 build-demo.js      把当前数据打包成静态快照（npm run build:demo）
 test/              node --test 单元测试（npm test）
 ```
