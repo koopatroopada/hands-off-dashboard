@@ -345,7 +345,7 @@ function buildPanel() {
     <div class="hs-kicker">数据</div>
     <button type="button" class="hs-btn" data-act="refresh">刷新</button>
     <div class="hs-divider"></div>
-    <div class="hs-kicker">工作目录（每个子文件夹视为一个项目）</div>
+    <div class="hs-kicker">工作目录（只展示含 HANDOFF.md 的文件夹）</div>
     <div class="hs-roots"></div>
     <button type="button" class="hs-btn" data-act="add-root">添加目录…</button>
     <div class="hs-divider"></div>

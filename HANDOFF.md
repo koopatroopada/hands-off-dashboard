@@ -44,7 +44,7 @@ Last-Activity: 2026-11-09
 
 ### 多工作目录 + 右键菜单刷新（`615478a`）
 
-- **每个工作目录下的每个子文件夹默认就是一个项目**：没有 `HANDOFF.md` 的也收录，显示「找不到交接文档」的错误卡提醒补文档（而不是悄悄藏起来）。扫描跳过隐藏目录、SKIP_DIRS、git worktree。
+- **每个工作目录下的每个子文件夹都视为一个项目，但只展示含 `HANDOFF.md` 的**：没有交接文档的文件夹直接跳过，看板上不放「找不到交接文档」的空卡片（用户明确要求）。显式 `projects` 清单仍保留错误卡用于诊断。扫描跳过隐藏目录、SKIP_DIRS、git worktree。
 - `config.json` 从单个 `root` 改为 `roots` 数组；`loadConfig` 兼容旧单数 `root`、环境变量、overrides，路径去重。跨工作目录按绝对路径去重。`readProject` 的 relDir/relPath 相对各自所属根目录（spec.root）。
 - **右键菜单新增**：「刷新」（主进程在页面主世界 `executeJavaScript` 派发 `hs-refresh` 事件，页面静默重读，不重载不闪烁）、「工作目录」管理（添加走原生目录选择框支持多选；每条带 × 移除；至少保留一个；改完写状态文件 `%APPDATA%/hands-off-dashboard/desktop-state.json` 并原地突变运行时 config，下一次 `/api/projects` 即时生效，不重启服务）。
 - roots 优先级：组件状态文件 > config.json。`projects` 显式清单保留兼容，常规留空走扫描。

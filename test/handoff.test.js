@@ -119,18 +119,13 @@ test('findHandoffFile 只认项目根目录的 HANDOFF.md', async () => {
   assert.equal(await findHandoffFile(path.join(root, 'delta')), null, '旧命名的 handoff-*.md 不再被识别');
 });
 
-test('buildPayload 每个子文件夹都默认是项目，缺 HANDOFF.md 的显示错误卡', async () => {
+test('buildPayload 跳过没有 HANDOFF.md 的文件夹', async () => {
   const root = await makeTempRoot();
   const payload = await buildPayload({ root, projects: [], ignore: [] });
-  assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta', 'delta', 'gamma']);
+  assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta']);
   assert.equal(payload.projects[0].error, null);
   assert.equal(payload.projects[0].handoff.relPath, 'alpha/HANDOFF.md');
-  assert.match(payload.projects.find((item) => item.name === 'gamma').error, /找不到交接文档/);
-  assert.match(
-    payload.projects.find((item) => item.name === 'delta').error,
-    /找不到交接文档/,
-    '旧命名的 handoff-*.md 不再被识别'
-  );
+  // gamma 没有交接文档、delta 只有旧命名的 docs/handoff-*.md，都不出现在看板上
 });
 
 test('buildPayload 支持多个工作目录，合并扫描', async () => {
@@ -140,7 +135,7 @@ test('buildPayload 支持多个工作目录，合并扫描', async () => {
   await fs.writeFile(path.join(root2, 'zeta', 'HANDOFF.md'), SAMPLE, 'utf8');
 
   const payload = await buildPayload({ roots: [root, root2], projects: [], ignore: [] });
-  assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta', 'delta', 'gamma', 'zeta']);
+  assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta', 'zeta']);
   assert.equal(payload.roots.length, 2);
   assert.equal(payload.projects.find((item) => item.name === 'zeta').handoff.relPath, 'zeta/HANDOFF.md');
 });
@@ -148,7 +143,7 @@ test('buildPayload 支持多个工作目录，合并扫描', async () => {
 test('buildPayload 跨工作目录按目录绝对路径去重', async () => {
   const root = await makeTempRoot();
   const payload = await buildPayload({ roots: [root, root], projects: [], ignore: [] });
-  assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta', 'delta', 'gamma']);
+  assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta']);
 });
 
 test('loadConfig 支持 roots 数组、兼容单数 root、同一路径去重', async () => {
@@ -187,7 +182,7 @@ test('buildPayload 跳过 worktree，避免同一个仓库出现两张卡', asyn
   await fs.writeFile(path.join(worktree, 'HANDOFF.md'), SAMPLE, 'utf8');
 
   const payload = await buildPayload({ root, projects: [], ignore: [] });
-  assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta', 'delta', 'gamma']);
+  assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta']);
 });
 
 test('buildPayload 对缺 HANDOFF.md 的项目返回错误字段而不是整份失败', async () => {
