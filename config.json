@@ -1,18 +1,6 @@
 {
-  "root": "D:/1Projects",
+  "roots": ["D:/1Projects"],
   "port": 4177,
   "open": true,
-  "projects": [
-    {
-      "id": "xinyitian",
-      "name": "新的一天",
-      "dir": "newday"
-    },
-    {
-      "id": "hands-off-dashboard",
-      "name": "Hands-off-Dashboard",
-      "dir": "Hands-off-Dashboard"
-    }
-  ],
   "ignore": ["Hands-off-Dashboard-dev"]
 }

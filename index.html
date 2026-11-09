@@ -2185,6 +2185,12 @@
     document.addEventListener('visibilitychange', refreshIfStale);
     window.addEventListener('focus', refreshIfStale);
 
+    // 桌面组件右键菜单「刷新」按钮：主进程在主世界派发本事件
+    window.addEventListener('hs-refresh', () => {
+      lastReadAt = Date.now();
+      loadProjects({ silent: true });
+    });
+
     lastReadAt = Date.now();
     loadProjects();
   </script>

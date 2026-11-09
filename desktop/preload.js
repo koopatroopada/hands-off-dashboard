@@ -4,8 +4,8 @@
  * 桌面组件的渲染侧桥接：
  * 1. 注入「透明窗口」所需样式（原 index.html 一行不改，全部用覆盖实现）
  * 2. 把两层不透明度写进 CSS 变量并持久化
- * 3. 右键面板：两个滑块 + 退出；单击面板外任意位置即关闭
- * 4. 拖动：用 CSS 的 -webkit-app-region 交给系统原生拖动
+ * 3. 右键面板：两个滑块 + 刷新 + 工作目录管理（增/删）+ 退出；单击面板外任意位置即关闭
+ * 4. 拖动：位移阈值判定 + 主进程 SetWindowPos 只改坐标
  */
 
 const { ipcRenderer } = require('electron');
@@ -16,6 +16,7 @@ const PANEL_ID = 'hs-desktop-panel';
 const DEFAULTS = { shellOpacity: 1, cardOpacity: 0.56 };
 
 let settings = { ...DEFAULTS };
+let roots = [];
 let panel = null;
 let panelOpen = false;
 let sliderActive = false;
@@ -136,6 +137,83 @@ const OVERRIDE_CSS = `
     background: rgba(255, 255, 255, 0.12);
   }
 
+  /* ── 通用按钮（刷新 / 添加目录）── */
+  #${PANEL_ID} .hs-btn {
+    appearance: none;
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.86);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  #${PANEL_ID} .hs-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  #${PANEL_ID} .hs-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  #${PANEL_ID} .hs-btn[data-flash="1"] {
+    border-color: rgba(120, 190, 120, 0.5);
+    color: #c9f0c9;
+  }
+
+  /* ── 工作目录列表 ── */
+  #${PANEL_ID} .hs-roots {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  #${PANEL_ID} .hs-root {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 6px 5px 9px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  #${PANEL_ID} .hs-root-path {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    direction: rtl; /* 超长时优先截断前缀（盘符），保留结尾的项目目录名 */
+    text-align: left;
+    color: rgba(255, 255, 255, 0.82);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #${PANEL_ID} .hs-root-x {
+    appearance: none;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.4);
+    font: inherit;
+    font-size: 13px;
+    line-height: 18px;
+    cursor: pointer;
+  }
+
+  #${PANEL_ID} .hs-root-x:hover {
+    background: rgba(220, 80, 80, 0.3);
+    color: #ffd9d4;
+  }
+
   #${PANEL_ID} .hs-hint {
     font-size: 11px;
     line-height: 1.65;
@@ -188,6 +266,66 @@ function persist() {
 
 /* ── 右键面板 ─────────────────────────────────────────────── */
 
+/** 按钮点击后闪一下确认反馈（「已刷新」/「已添加」） */
+function flashButton(button, text) {
+  if (!button) return;
+  const original = button.textContent;
+  button.textContent = text;
+  button.dataset.flash = '1';
+  setTimeout(() => {
+    button.textContent = original;
+    delete button.dataset.flash;
+  }, 900);
+}
+
+/** 把工作目录列表画进面板 */
+function renderRoots() {
+  if (!panel) return;
+  const list = panel.querySelector('.hs-roots');
+  if (!list) return;
+  list.innerHTML = '';
+
+  for (const dir of roots) {
+    const row = document.createElement('div');
+    row.className = 'hs-root';
+
+    const path = document.createElement('span');
+    path.className = 'hs-root-path';
+    path.textContent = String(dir).split('\\').join('/');
+    path.title = path.textContent;
+    row.appendChild(path);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'hs-root-x';
+    remove.setAttribute('aria-label', `移除工作目录 ${path.textContent}`);
+    remove.textContent = '×';
+    remove.addEventListener('click', async () => {
+      remove.disabled = true;
+      try {
+        const result = await ipcRenderer.invoke('desktop:remove-root', dir);
+        roots = result.roots || [];
+        renderRoots();
+      } finally {
+        remove.disabled = false;
+      }
+    });
+    row.appendChild(remove);
+
+    list.appendChild(row);
+  }
+}
+
+async function syncRoots() {
+  try {
+    const result = await ipcRenderer.invoke('desktop:get-roots');
+    roots = result.roots || [];
+  } catch {
+    /* 拿不到就保持现值 */
+  }
+  renderRoots();
+}
+
 function buildPanel() {
   const el = document.createElement('div');
   el.id = PANEL_ID;
@@ -203,6 +341,13 @@ function buildPanel() {
       <input type="range" min="0" max="100" step="1" data-key="cardOpacity" aria-label="卡片不透明度" />
       <span class="hs-value" data-out="cardOpacity"></span>
     </div>
+    <div class="hs-divider"></div>
+    <div class="hs-kicker">数据</div>
+    <button type="button" class="hs-btn" data-act="refresh">刷新</button>
+    <div class="hs-divider"></div>
+    <div class="hs-kicker">工作目录（每个子文件夹视为一个项目）</div>
+    <div class="hs-roots"></div>
+    <button type="button" class="hs-btn" data-act="add-root">添加目录…</button>
     <div class="hs-divider"></div>
     <div class="hs-hint">按住卡片或空白处可拖动窗口<br />单击空白 / 右键再次点击可关闭本菜单<br />Ctrl+Alt+H 隐藏 · Ctrl+Alt+Q 退出</div>
     <button type="button" class="hs-quit">退出组件</button>
@@ -225,6 +370,32 @@ function buildPanel() {
     });
   });
 
+  // 刷新：主进程在页面主世界派发 hs-refresh，页面脚本静默重读 /api/projects
+  el.querySelector('[data-act="refresh"]').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      await ipcRenderer.invoke('desktop:refresh');
+      flashButton(button, '已刷新');
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  // 添加目录：主进程弹原生目录选择框（支持多选），选定即生效
+  el.querySelector('[data-act="add-root"]').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      const result = await ipcRenderer.invoke('desktop:add-roots');
+      roots = result.roots || [];
+      renderRoots();
+      if (result.added) flashButton(button, `已添加 ${result.added} 个`);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   el.querySelector('.hs-quit').addEventListener('click', () => {
     ipcRenderer.send('desktop:quit');
   });
@@ -238,6 +409,9 @@ function buildPanel() {
 
 function openPanel(x, y) {
   if (!panel) panel = buildPanel();
+
+  // 打开时同步一次工作目录（可能在别处被修改）
+  syncRoots();
 
   // 先把面板放到左上角量尺寸，再按鼠标位置夹在视口内
   panel.style.left = '0px';
@@ -389,6 +563,7 @@ async function init() {
     if (saved) {
       if (Number.isFinite(saved.shellOpacity)) settings.shellOpacity = saved.shellOpacity;
       if (Number.isFinite(saved.cardOpacity)) settings.cardOpacity = saved.cardOpacity;
+      if (Array.isArray(saved.roots)) roots = saved.roots;
     }
   } catch {
     // 读取失败就用默认值

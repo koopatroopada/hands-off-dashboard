@@ -22,7 +22,7 @@
  * 透出壁纸就失去意义，因此放弃子窗口方案，改为「顶层窗口 + 定时巡护」。
  */
 
-const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, screen, globalShortcut } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { createServer } = require('../server.js');
@@ -193,9 +193,36 @@ function writeState(patch) {
 
 let win = null;
 let httpServer = null;
+let runtimeConfig = null; // createServer 返回的 config 对象，改 roots 时原地突变让服务即时生效
 
 const DEFAULT_WIDTH = 1000;
 const DEFAULT_HEIGHT = 660;
+
+/** 工作目录列表：状态文件里存过就用它，否则落到 config.json 的默认值 */
+function currentRoots() {
+  const saved = readState();
+  if (Array.isArray(saved.roots) && saved.roots.length) return [...saved.roots];
+  if (runtimeConfig && Array.isArray(runtimeConfig.roots)) return [...runtimeConfig.roots];
+  return [];
+}
+
+/** 更新工作目录：写状态文件 + 原地突变运行时 config，下一次 /api/projects 立即生效 */
+function setRoots(nextRoots) {
+  writeState({ roots: nextRoots });
+  if (runtimeConfig) {
+    runtimeConfig.roots = [...nextRoots];
+    runtimeConfig.root = nextRoots[0];
+  }
+  return nextRoots;
+}
+
+/** 通知页面静默重读数据（在主世界派发，确保跨 contextIsolation 可达） */
+function refreshPage() {
+  if (!win || win.isDestroyed()) return;
+  win.webContents
+    .executeJavaScript("window.dispatchEvent(new Event('hs-refresh'))", true)
+    .catch(() => { /* 页面正在跳转时忽略 */ });
+}
 
 async function boot() {
   migrateLegacyState();
@@ -207,8 +234,13 @@ async function boot() {
   const x = Math.round(Number.isFinite(saved.x) ? saved.x : workArea.x + workArea.width - width - 40);
   const y = Math.round(Number.isFinite(saved.y) ? saved.y : workArea.y + workArea.height - height - 40);
 
-  const { url, server } = await createServer({ open: false });
+  // 用户在面板里配置过工作目录就以状态文件为准（config.json 只是初始默认）
+  const overrides = { open: false };
+  if (Array.isArray(saved.roots) && saved.roots.length) overrides.roots = saved.roots;
+
+  const { url, server, config } = await createServer(overrides);
   httpServer = server;
+  runtimeConfig = config;
 
   win = new BrowserWindow({
     x,
@@ -305,6 +337,7 @@ ipcMain.handle('desktop:bootstrap', () => {
   return {
     shellOpacity: Number.isFinite(saved.shellOpacity) ? saved.shellOpacity : 1,
     cardOpacity: Number.isFinite(saved.cardOpacity) ? saved.cardOpacity : 0.56,
+    roots: currentRoots(),
     version: app.getVersion(),
     desktopLayer: !!api && !DEBUG_TOPMOST
   };
@@ -320,6 +353,49 @@ ipcMain.handle('desktop:set-opacity', (_event, payload) => {
   }
   writeState(patch);
   return patch;
+});
+
+/* ── 工作目录与刷新 ───────────────────────────────────────── */
+
+ipcMain.handle('desktop:get-roots', () => ({ roots: currentRoots() }));
+
+ipcMain.handle('desktop:add-roots', async () => {
+  const result = await dialog.showOpenDialog(win, {
+    title: '添加工作目录（可多选）',
+    properties: ['openDirectory', 'multiSelections']
+  });
+  if (result.canceled || !result.filePaths.length) return { roots: currentRoots(), added: 0 };
+
+  const existing = new Set(currentRoots().map((item) => String(item).toLowerCase()));
+  const merged = [...currentRoots()];
+  let added = 0;
+  for (const dir of result.filePaths) {
+    if (existing.has(String(dir).toLowerCase())) continue;
+    existing.add(String(dir).toLowerCase());
+    merged.push(dir);
+    added += 1;
+  }
+
+  if (added) {
+    setRoots(merged);
+    refreshPage();
+  }
+  return { roots: merged, added };
+});
+
+ipcMain.handle('desktop:remove-root', (_event, dir) => {
+  const next = currentRoots().filter((item) => String(item).toLowerCase() !== String(dir).toLowerCase());
+  if (next.length === currentRoots().length) return { roots: next, removed: 0 };
+  // 至少保留一个工作目录，全删会让看板没有任何可扫描的地方
+  if (!next.length) return { roots: currentRoots(), removed: 0 };
+  setRoots(next);
+  refreshPage();
+  return { roots: next, removed: 1 };
+});
+
+ipcMain.handle('desktop:refresh', () => {
+  refreshPage();
+  return true;
 });
 
 /* ── 拖动 ───────────────────────────────────────────────────── */

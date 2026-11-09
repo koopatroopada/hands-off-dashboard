@@ -24,19 +24,16 @@ npm run desktop         # 桌面组件
 
 ## 数据从哪来
 
-默认读 `config.json` 里 `root` 指向的根目录（当前是 `D:/1Projects`），按 `projects` 清单逐个取交接文档。
+默认读 `config.json` 里 `roots` 数组指向的**工作目录**（当前是 `D:/1Projects`），逐个扫描：**每个工作目录下的每个子文件夹默认就是一个项目**。没有 `HANDOFF.md` 的文件夹也会出现在看板上，显示「找不到交接文档」的错误卡，提醒你给它补一份。扫描会跳过隐藏目录、`node_modules` 等杂目录，以及 `.git` 是文件而非目录的目录——也就是 git worktree，避免同一个仓库出现两张卡。
 
 **交接文档的位置是写死的：每个项目根目录下的 `HANDOFF.md`。** 不看 `docs/`、不认 `handoff-*.md` 这类历史命名、也不允许在 `config.json` 里覆盖路径——一份项目只有一份交接文档，避免看板读到早已过期的归档。
 
-`projects` 里每一项：
+工作目录有两个入口：
 
-| 字段 | 说明 |
-| --- | --- |
-| `name` | 卡片标题，也是目录名的默认值 |
-| `dir` | 项目目录，相对 `root`，省略时用 `name` |
-| `id` | 内部标识，用于置顶记忆，省略时用 `name` |
+- **桌面组件右键菜单 → 「工作目录」**：可添加多个目录（原生目录选择框，支持多选）、移除已有目录，改完即时生效并自动刷新看板。配置持久化在桌面组件自己的状态文件里（`%APPDATA%/hands-off-dashboard/desktop-state.json`），优先级高于 `config.json`。
+- **`config.json` 的 `roots` 数组**：网页版与桌面组件的初始默认值。单个 `root` 字段仍然兼容（会被当作只有一个元素的 `roots`）。
 
-把 `projects` 写成空数组 `[]`（或整段删掉）就切成**自动发现**：扫描根目录下每个文件夹，只要目录里有 `HANDOFF.md` 就收录。自动发现会跳过隐藏目录，以及 `.git` 是文件而非目录的目录——也就是 git worktree，避免同一个仓库出现两张卡。
+`config.json` 里仍然保留 `projects` 显式清单做兼容（相对第一个工作目录解析），但常规用法是留空走扫描。桌面组件右键菜单还有「刷新」按钮：不重载页面、静默重读一遍数据。
 
 ## 交接文档格式
 
@@ -159,10 +156,9 @@ Last-Activity: 2026-11-04
 
 ```json
 {
-  "root": "D:/1Projects",
+  "roots": ["D:/1Projects"],
   "port": 4177,
   "open": true,
-  "projects": [ ... ],
   "ignore": ["Hands-off-Dashboard-dev"]
 }
 ```
