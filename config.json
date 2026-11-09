@@ -6,14 +6,12 @@
     {
       "id": "xinyitian",
       "name": "新的一天",
-      "dir": "newday",
-      "handoff": "newday/docs/handoff-20261104-192024.md"
+      "dir": "newday"
     },
     {
       "id": "hands-off-dashboard",
       "name": "Hands-off-Dashboard",
-      "dir": "Hands-off-Dashboard",
-      "handoff": "Hands-off-Dashboard/handoff-20261103-233547-1.md"
+      "dir": "Hands-off-Dashboard"
     }
   ],
   "ignore": ["Hands-off-Dashboard-dev"]

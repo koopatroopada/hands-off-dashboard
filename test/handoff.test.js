@@ -94,29 +94,46 @@ test('parseHandoff 把 n/a 之类的占位值当作没填', () => {
 
 async function makeTempRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dashboard-test-'));
+  // alpha：根目录有 HANDOFF.md，同时留着旧的 docs/handoff-*.md 干扰项
   await fs.mkdir(path.join(root, 'alpha', 'docs'), { recursive: true });
+  await fs.writeFile(path.join(root, 'alpha', 'HANDOFF.md'), SAMPLE, 'utf8');
   await fs.writeFile(path.join(root, 'alpha', 'docs', 'handoff-20260101-000000.md'), SAMPLE, 'utf8');
   await fs.writeFile(path.join(root, 'alpha', 'docs', 'handoff-20260202-000000.md'), SAMPLE, 'utf8');
+  // beta：只有 HANDOFF.md
   await fs.mkdir(path.join(root, 'beta'), { recursive: true });
   await fs.writeFile(path.join(root, 'beta', 'HANDOFF.md'), SAMPLE, 'utf8');
+  // gamma：没有任何交接文档
   await fs.mkdir(path.join(root, 'gamma'), { recursive: true });
   await fs.writeFile(path.join(root, 'gamma', 'notes.md'), '没有交接文档', 'utf8');
+  // delta：只有旧命名的 handoff-*.md，写死后应当被忽略
+  await fs.mkdir(path.join(root, 'delta', 'docs'), { recursive: true });
+  await fs.writeFile(path.join(root, 'delta', 'docs', 'handoff-20260303-000000.md'), SAMPLE, 'utf8');
   return root;
 }
 
-test('findHandoffFile 优先 docs/ 并取文件名最大的那份', async () => {
+test('findHandoffFile 只认项目根目录的 HANDOFF.md', async () => {
   const root = await makeTempRoot();
-  const found = await findHandoffFile(path.join(root, 'alpha'));
-  assert.equal(path.basename(found), 'handoff-20260202-000000.md');
+  assert.equal(path.basename(await findHandoffFile(path.join(root, 'alpha'))), 'HANDOFF.md');
   assert.equal(await findHandoffFile(path.join(root, 'gamma')), null);
+  assert.equal(await findHandoffFile(path.join(root, 'delta')), null, '旧命名的 handoff-*.md 不再被识别');
 });
 
-test('buildPayload 只收录有交接文档的项目', async () => {
+test('buildPayload 只收录根目录有 HANDOFF.md 的项目', async () => {
   const root = await makeTempRoot();
   const payload = await buildPayload({ root, projects: [], ignore: [] });
   assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta']);
   assert.equal(payload.projects[0].error, null);
-  assert.equal(payload.projects[0].handoff.relPath, 'alpha/docs/handoff-20260202-000000.md');
+  assert.equal(payload.projects[0].handoff.relPath, 'alpha/HANDOFF.md');
+});
+
+test('buildPayload 忽略 config.json 里的 handoff 字段，路径写死', async () => {
+  const root = await makeTempRoot();
+  const payload = await buildPayload({
+    root,
+    projects: [{ name: 'alpha', handoff: 'alpha/docs/handoff-20260101-000000.md' }],
+    ignore: []
+  });
+  assert.equal(payload.projects[0].handoff.relPath, 'alpha/HANDOFF.md');
 });
 
 test('buildPayload 跳过 worktree，避免同一个仓库出现两张卡', async () => {
@@ -130,11 +147,11 @@ test('buildPayload 跳过 worktree，避免同一个仓库出现两张卡', asyn
   assert.deepEqual(payload.projects.map((item) => item.name), ['alpha', 'beta']);
 });
 
-test('buildPayload 对坏路径返回错误字段而不是整份失败', async () => {
+test('buildPayload 对缺 HANDOFF.md 的项目返回错误字段而不是整份失败', async () => {
   const root = await makeTempRoot();
   const payload = await buildPayload({
     root,
-    projects: [{ name: 'alpha', handoff: 'alpha/docs/nope.md' }],
+    projects: [{ name: 'gamma' }],
     ignore: []
   });
   assert.equal(payload.projects.length, 1);
