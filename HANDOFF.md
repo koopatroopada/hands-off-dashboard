@@ -42,15 +42,24 @@ Last-Activity: 2026-11-09
 - 测试 12 项全过（新增「config 的 handoff 字段被忽略」+ docs/ 干扰项用例）。
 - 运行时验证：`GET /api/projects` 两张卡均指向各自根目录 `HANDOFF.md`，无报错。
 
+### 多工作目录 + 右键菜单刷新（`615478a`）
+
+- **每个工作目录下的每个子文件夹默认就是一个项目**：没有 `HANDOFF.md` 的也收录，显示「找不到交接文档」的错误卡提醒补文档（而不是悄悄藏起来）。扫描跳过隐藏目录、SKIP_DIRS、git worktree。
+- `config.json` 从单个 `root` 改为 `roots` 数组；`loadConfig` 兼容旧单数 `root`、环境变量、overrides，路径去重。跨工作目录按绝对路径去重。`readProject` 的 relDir/relPath 相对各自所属根目录（spec.root）。
+- **右键菜单新增**：「刷新」（主进程在页面主世界 `executeJavaScript` 派发 `hs-refresh` 事件，页面静默重读，不重载不闪烁）、「工作目录」管理（添加走原生目录选择框支持多选；每条带 × 移除；至少保留一个；改完写状态文件 `%APPDATA%/hands-off-dashboard/desktop-state.json` 并原地突变运行时 config，下一次 `/api/projects` 即时生效，不重启服务）。
+- roots 优先级：组件状态文件 > config.json。`projects` 显式清单保留兼容，常规留空走扫描。
+- 验证：15 项测试全过；CDP 实测面板渲染/刷新链路（事件到达主世界、status 更新）。
+
 ### 原型契约
 
 `index.html` 的 `<style>` 与原型字节相同，UI 不改；已批准的例外仅「查看全文+路径」行与全文抽屉。样式注入全部在 `desktop/preload.js` 完成。
 
 ## Next steps
 
-1. **合并 dev → main**（dev 领先 6 个提交：084fac9 → 61d3eaf → b7c8cc7 → 6695c1a → 38ab2cf → b16b4e3，加上本次删除重复文件）。
+1. **合并 dev → main**（dev 领先 main 多个提交：桌面组件全套修复 + 快捷方式 + 数据源统一 + 多工作目录）。
 2. 两个无引用文件待拍板：`design-spec.html`、`image.png`。
 3. 线上静态快照（`npm run build` 产物）仍是旧版，需重新构建发布；线上形态无法承载桌面组件，定位为演示。
+4. 右键「添加目录…」的原生对话框只能人工验证（自动化会阻塞），等用户实测一次多选添加。
 
 ## Relevant artifacts
 
