@@ -26,8 +26,16 @@ function toInlineJson(value) {
     .replace(/\u2029/g, '\\u2029');
 }
 
+/** `--root=<dir>` 用指定目录代替 config.json 的工作目录，相对路径按项目根解析。 */
+function rootOverride(argv) {
+  const flag = argv.find((item) => item.startsWith('--root='));
+  if (!flag) return {};
+  const value = flag.slice('--root='.length).trim();
+  return value ? { roots: [path.resolve(APP_DIR, value)] } : {};
+}
+
 async function main() {
-  const config = await loadConfig(APP_DIR);
+  const config = await loadConfig(APP_DIR, rootOverride(process.argv.slice(2)));
   const payload = await buildPayload(config);
 
   const docs = {};

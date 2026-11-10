@@ -7,6 +7,7 @@
     "start": "node server.js",
     "test": "node --test test/handoff.test.js",
     "build:demo": "node build-demo.js",
+    "build:demo:example": "node build-demo.js --root=examples",
     "desktop": "electron desktop/main.js"
   },
   "engines": {
