@@ -25,6 +25,9 @@ build/
 .cache/
 demo/
 
+# ---- 本机素材（不外发）----
+image.png
+
 # ---- 日志与临时文件 ----
 *.log
 npm-debug.log*

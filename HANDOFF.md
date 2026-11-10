@@ -67,7 +67,7 @@ Last-Activity: 2026-11-09
 - `desktop/preload.js` — 透明化样式注入、拖动/右键面板交互
 - `lib/handoff.js` — HANDOFF.md 解析与数据源（根目录固定路径）
 - `scripts/install-shortcuts.ps1`、`安装快捷方式.bat`、`取消开机自启.bat`、`assets/icon.ico`
-- `C:/Users/adaic/.workbuddy/skills/handoff/SKILL.md` — v1.2.0，输出固定为 HANDOFF.md
+- `~/.workbuddy/skills/handoff/SKILL.md` — v1.2.0，输出固定为 HANDOFF.md
 
 ## Suggested skills
 
