@@ -216,6 +216,47 @@ function setRoots(nextRoots) {
   return nextRoots;
 }
 
+/**
+ * 安装包版首次启动：让用户挑工作目录。
+ *
+ * 源码里的 config.json 写死了开发机的 D:/1Projects，装到别的机器会扫不到东西；
+ * 而本地开发态（app.isPackaged === false）沿用 config.json，行为不变。
+ * 取消选择时落到随包附带的 examples，保证装完立刻有卡片可看，且绝不会
+ * 让 loadConfig 回退去扫描 resources/ 目录。
+ */
+const PACKAGED_FIRST_RUN = app.isPackaged && process.env.HS_SKIP_FIRST_RUN !== '1';
+
+async function ensurePackagedRoots() {
+  if (!PACKAGED_FIRST_RUN) return;
+  const state = readState();
+  if (Array.isArray(state.roots) && state.roots.length) return;
+  if (state.firstRunDone) return;
+
+  const result = await dialog.showOpenDialog({
+    title: '选择项目所在的工作目录',
+    message: '每个子文件夹视为一个项目，只有根目录含 HANDOFF.md 的会显示。可多选；之后在组件右键菜单「工作目录」里随时修改。',
+    properties: ['openDirectory', 'multiSelections'],
+    buttonLabel: '用这些目录'
+  });
+  const chosen = result.canceled ? [] : result.filePaths.filter(Boolean);
+  const bundledExamples = path.join(app.getAppPath(), 'examples');
+  writeState({
+    roots: chosen.length ? chosen : [bundledExamples],
+    firstRunDone: true
+  });
+}
+
+/** 打包版强制以自己的 roots 覆盖 config.json，避免把开发机路径带到别的电脑 */
+function serverOverrides(saved) {
+  const overrides = { open: false };
+  if (Array.isArray(saved.roots) && saved.roots.length) overrides.roots = [...saved.roots];
+  if (app.isPackaged && !overrides.roots) {
+    const bundledExamples = path.join(app.getAppPath(), 'examples');
+    if (fs.existsSync(bundledExamples)) overrides.roots = [bundledExamples];
+  }
+  return overrides;
+}
+
 /** 通知页面静默重读数据（在主世界派发，确保跨 contextIsolation 可达） */
 function refreshPage() {
   if (!win || win.isDestroyed()) return;
@@ -226,6 +267,7 @@ function refreshPage() {
 
 async function boot() {
   migrateLegacyState();
+  await ensurePackagedRoots();
   const saved = readState();
   const { workArea } = screen.getPrimaryDisplay();
 
@@ -234,9 +276,8 @@ async function boot() {
   const x = Math.round(Number.isFinite(saved.x) ? saved.x : workArea.x + workArea.width - width - 40);
   const y = Math.round(Number.isFinite(saved.y) ? saved.y : workArea.y + workArea.height - height - 40);
 
-  // 用户在面板里配置过工作目录就以状态文件为准（config.json 只是初始默认）
-  const overrides = { open: false };
-  if (Array.isArray(saved.roots) && saved.roots.length) overrides.roots = saved.roots;
+  // 用户在面板里配置过工作目录就以状态文件为准（config.json 只是开发态默认值）
+  const overrides = serverOverrides(saved);
 
   const { url, server, config } = await createServer(overrides);
   httpServer = server;

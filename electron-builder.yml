@@ -1,0 +1,50 @@
+# 一键静默安装：双击 → 无向导、无 UAC → 装完立刻启动，组件直接出现在桌面。
+# 用 npm run dist 构建；产物在 dist/Hands-off-Dashboard-Setup-<version>.exe
+
+appId: com.koopatroopada.handsoffdashboard
+productName: Hands-off Dashboard
+artifactName: Hands-off-Dashboard-Setup-${version}.${ext}
+
+# 桌面层贴底靠 koffi 的 .node 原生模块；不打 asar，避免原生模块解包问题。
+asar: false
+npmRebuild: false
+electronDist: node_modules/electron/dist
+electronVersion: 45.2.3
+
+directories:
+  output: dist
+  buildResources: build-resources
+
+# 只带运行必需的文件，不带源码原型、测试、build 脚本与 electron 开发依赖。
+files:
+  - package.json
+  - index.html
+  - server.js
+  - config.json
+  - lib/**/*
+  - desktop/**/*
+  - assets/**/*
+  - examples/**/*
+  - node_modules/koffi/**/*
+  - node_modules/@koromix/koffi-win32-x64/**/*
+
+win:
+  icon: assets/icon.ico
+  target:
+    - target: nsis
+      arch: x64
+
+nsis:
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: false
+  runAfterFinish: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 项目交接看板
+  menuCategory: 工具
+  deleteAppDataOnUninstall: false
+  displayLanguageSelector: false
+  language: 2052
+  include: installer.nsh

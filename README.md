@@ -72,6 +72,21 @@ node server.js        # 或 npm start
 
 > 直接双击 `index.html` 打不开：浏览器不允许 `file://` 页面读本地文件，必须走本地服务。
 
+## 桌面安装包（Windows）
+
+想跳过上面四步，直接双击就能在桌面上看到组件：
+
+```bash
+npm install
+npm run dist
+```
+
+产物是 `dist/Hands-off-Dashboard-Setup-<版本>.exe`（约 117 MB）。双击后**没有安装向导、不需要管理员权限**：自动装到当前用户目录、装完立刻启动，组件直接出现在桌面上；同时生成桌面快捷方式、开始菜单入口、开机自启和卸载项。
+
+首次启动会弹出一个目录选择框，让你挑项目所在的工作目录（可多选）。选完就按 `HANDOFF.md` 出卡片；直接取消则显示随包附带的三个示例项目。之后在组件右键菜单 →「工作目录」里随时增删。
+
+> 打包配置在 `electron-builder.yml`：不打 asar（`koffi` 的 `.node` 原生模块需要真实路径）、复用本机 `node_modules/electron/dist` 不重复下载 Electron、NSIS 一键安装。首次构建需要的 NSIS 二进制走 `npmmirror.com` 镜像（`scripts/build-installer.js`），避开被拦的 GitHub releases。`dist/` 不进 git。
+
 ## 交接文档格式
 
 头部字段，缺哪个都不影响解析：
