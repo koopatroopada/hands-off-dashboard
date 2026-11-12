@@ -28,6 +28,17 @@ demo/
 # ---- 本机素材（不外发）----
 image.png
 
+# ---- 轻量宿主（Go + WebView2）：源码保留，产物与本机测试状态不外发 ----
+lite/**/*.exe
+lite/*.png
+lite/*.log
+lite/.t*/
+lite/.a*/
+lite/.h*/
+lite/.d*/
+lite/.testdata/
+lite/.statedir
+
 # ---- 日志与临时文件 ----
 *.log
 npm-debug.log*

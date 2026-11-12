@@ -10,7 +10,9 @@
     "build:demo": "node build-demo.js",
     "build:demo:example": "node build-demo.js --root=examples",
     "desktop": "electron desktop/main.js",
-    "dist": "node scripts/build-installer.js"
+    "dist": "node scripts/build-installer.js",
+    "dist:lite": "node scripts/build-lite.js",
+    "start:lite": "lite/hs-lite.exe"
   },
   "engines": {
     "node": ">=18"

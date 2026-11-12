@@ -68,24 +68,36 @@ node server.js        # 或 npm start
 
 浏览器会自动打开 `http://127.0.0.1:4177/`，端口被占用就顺延。Windows 上也可以直接双击 `start.bat`。
 
-**4.（可选）桌面组件**：`npm install` 一次（装 Electron，约 350 MB），然后双击 `start-desktop.bat` 或跑 `npm run desktop`。
+**4.（可选）桌面组件**：想省掉 `npm install`（Electron 约 350 MB），直接用「桌面安装包」一节的轻量版——4.6 MB 的安装包，只依赖系统自带的 WebView2。走 Electron 版则 `npm install` 一次，然后双击 `start-desktop.bat` 或跑 `npm run desktop`。
 
 > 直接双击 `index.html` 打不开：浏览器不允许 `file://` 页面读本地文件，必须走本地服务。
 
 ## 桌面安装包（Windows）
 
-想跳过上面四步，直接双击就能在桌面上看到组件：
+想跳过上面四步，直接双击就能在桌面上看到组件。有两条同等功能的实现，按体积挑：
 
-```bash
-npm install
-npm run dist
-```
+| 实现 | 安装包 | 装完占用 | 运行依赖 | 构建命令 |
+| --- | --- | --- | --- | --- |
+| **轻量版（推荐）** | **4.6 MB** | 约 9 MB | 系统自带的 WebView2 运行时 | `npm run dist:lite` |
+| Electron 版 | 117 MB | 约 359 MB | 无（自带 Chromium） | `npm install && npm run dist` |
 
-产物是 `dist/Hands-off-Dashboard-Setup-<版本>.exe`（约 117 MB）。双击后**没有安装向导、不需要管理员权限**：自动装到当前用户目录、装完立刻启动，组件直接出现在桌面上；同时生成桌面快捷方式、开始菜单入口、开机自启和卸载项。
+两者的**界面、接口、HANDOFF 解析、配置与状态文件完全相同**——轻量版把 Electron 那个 238 MB 的 Chromium 壳换成 Windows 自带的 WebView2，页面还是同一份 `index.html`。`desktop-state.json` 两份共用，随时可以换着跑。
+
+### 轻量版（4.6 MB）
+
+产物是 `lite/build/Hands-off-Dashboard-Lite-Setup-<版本>.exe`。双击后**没有安装向导、不需要管理员权限**：自动装到 `%LOCALAPPDATA%\Programs\Hands-off Dashboard`、装完立刻启动，组件直接出现在桌面上；同时生成桌面快捷方式、开始菜单入口、开机自启和卸载项。
+
+- 构建：`npm run dist:lite`。需要 Go 工具链（默认找 `D:/2Enviroment/Go/bin/go.exe`，可用 `GO_BIN` 覆盖）和 NSIS（默认用 electron-builder 缓存里的那份，可用 `NSIS_MAKENSIS` 覆盖）。
+- WebView2 运行时：Win11 与多数 Win10 自带。安装时若检测不到，会用随包的微软官方引导程序静默补齐（约 100 MB，需要联网）——这也是安装包比纯 exe 大 1.9 MB 的原因。
+- 窗口透明、桌面贴底、右键面板、拖动、全局热键（`Ctrl+Alt+H` 隐藏/显示、`Ctrl+Alt+Q` 退出）全部与 Electron 版一致。
+
+### Electron 版（117 MB）
+
+产物是 `dist/Hands-off-Dashboard-Setup-<版本>.exe`。安装行为与轻量版相同（一键、免 UAC、装完启动、快捷方式/自启/卸载项齐全），但不需要任何系统运行时，任何 Windows 10/11 都能直接跑。
+
+> 打包配置在 `electron-builder.yml`：不打 asar（`koffi` 的 `.node` 原生模块需要真实路径）、复用本机 `node_modules/electron/dist` 不重复下载 Electron、NSIS 一键安装。首次构建需要的 NSIS 二进制走 `npmmirror.com` 镜像（`scripts/build-installer.js`），避开被拦的 GitHub releases。`dist/` 与 `lite/build/` 都不进 git。
 
 首次启动会弹出一个目录选择框，让你挑项目所在的工作目录（可多选）。选完就按 `HANDOFF.md` 出卡片；直接取消则显示随包附带的三个示例项目。之后在组件右键菜单 →「工作目录」里随时增删。
-
-> 打包配置在 `electron-builder.yml`：不打 asar（`koffi` 的 `.node` 原生模块需要真实路径）、复用本机 `node_modules/electron/dist` 不重复下载 Electron、NSIS 一键安装。首次构建需要的 NSIS 二进制走 `npmmirror.com` 镜像（`scripts/build-installer.js`），避开被拦的 GitHub releases。`dist/` 不进 git。
 
 ## 交接文档格式
 
@@ -167,9 +179,18 @@ server.js          零依赖 HTTP 服务（命令行与桌面组件共用）
 lib/handoff.js     交接文档解析 + 项目发现
 desktop/main.js    桌面组件主进程：贴桌面层、拖动、层级守护
 desktop/preload.js 透明化样式注入、右键面板、不透明度、拖动交互
+lite/              轻量版宿主（Go + 系统 WebView2），与 Electron 版同契约
+  main.go          入口：单实例、启动服务、建窗、装 WebView2
+  window.go        Win32 分层透明窗口、贴底巡护、拖动、DPI、热键
+  data.go          HANDOFF 解析（lib/handoff.js 的逐字段复刻）
+  server.go        三个 HTTP 接口 + 把 preload.js 包成桥脚本注入
+  ipc.go           /api/desktop/<channel>，对应 Electron 的 10 个 IPC 通道
+  dialog.go        原生目录选择（可多选）
+  state.go         desktop-state.json 读写（与 Electron 版同一文件）
+  installer.nsi    一键安装包脚本
 build-demo.js      把当前数据打包成静态快照
 examples/          三个虚构项目的交接文档，用于生成演示截图
-scripts/           快捷方式安装、图标生成
+scripts/           快捷方式安装、图标生成、两种安装包构建
 test/              node --test 单元测试（npm test）
 ```
 
@@ -195,6 +216,7 @@ npm run build:demo          # 用当前 config.json 的真实数据生成快照
 
 ## 已知限制
 
-- 桌面组件是 Windows 专属（依赖 Win32 窗口层级与 `koffi`），网页版跨平台。
+- 桌面组件是 Windows 专属：两版都依赖 Win32 窗口层级（Progman 贴底）；Electron 版用 `koffi` 调 Win32，轻量版用系统 WebView2 运行时。网页版跨平台。
+- 轻量版需要 WebView2 运行时（Win11 与多数 Win10 自带），缺失时由安装器联网补齐；Electron 版无此前提，但体积大 25 倍。
 - 只有一个路径约定：项目根目录的 `HANDOFF.md`。想用别的文件名，只能改 `lib/handoff.js` 里的 `HANDOFF_NAME`。
 - 仓库暂未声明开源许可证。
