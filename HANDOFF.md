@@ -2,24 +2,24 @@ Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件）�
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
 Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
 Current: 安装包分发
-Evidence: 仓库 github.com/koopatroopada/hands-off-dashboard（线上停在 313ff5b）；本地 lite/build/Hands-off-Dashboard-Lite-Setup-1.0.0.exe（4.60 MB）已实测安装与卸载
-Gate: 外部机器不看源码就能拿到安装包，双击装完、首启选好工作目录即正常出卡片
-Blocker: 两个安装包提交只存在本地，仓库里下载不到安装包，也没有 LICENSE
+Evidence: 仓库 github.com/koopatroopada/hands-off-dashboard（dev/main 均在 521a56f）；本地 lite/build/Hands-off-Dashboard-Lite-Setup-1.0.0.exe（4.60 MB）已真机验收
+Gate: GitHub Release 上能直接下载到轻量版安装包，外部机器双击装完、首启选好工作目录即正常出卡片
+Blocker: 仓库里还没有可下载的安装包（Release 未建），也没有 LICENSE
 Next-Determined: DETERMINED
-Next: 真机验收第一版 EXE 安装包，如果有问题，列出要修改的地方；如果没有问题，推到 github 上
+Next: 建 GitHub Release v1.0.0 挂上 Hands-off-Dashboard-Lite-Setup-1.0.0.exe（4.60 MB），让外部能直接下载安装
 Created: 2026-11-03
-Last-Activity: 2026-11-13
+Last-Activity: 2026-11-14
 
-# Handoff: 开源发布 + 一键安装包 + 轻量版从 116 MB 压到 4.6 MB
+# Handoff: 真机验收通过，轻量版安装包落地并推送 GitHub
 
-生成时间：2026-11-13 09:05
+生成时间：2026-11-14 01:05
 
 ## Current state
 
 ### 开源发布（`313ff5b`、`728b50d`）
 
 - 仓库 <https://github.com/koopatroopada/hands-off-dashboard>，public，默认分支 main。
-- **本机 `github.com` 的 git 通道（clone/push）504-502 超时，只有 `api.github.com` 通**。所以推送不是 `git push`，而是走 Git Data API 逐条镜像：blobs → tree → commit → 更新 ref，SHA 与原提交完全一致。空仓库时 Git Data API 不可用，先用 Contents API 建一个引导提交再 force 覆盖 ref。
+- **推送方式有过一次反转**：11-13 之前本机 `github.com` 的 git 通道（clone/push）502 超时，只有 `api.github.com` 通，所以用 Git Data API 逐条镜像：blobs → tree → commit → 更新 ref，SHA 与原提交完全一致；空仓库时 Git Data API 不可用，先用 Contents API 建引导提交再 force 覆盖 ref。**11-14 该通道已恢复，标准 `git push` 直接可用**（见下节）。API 镜像流程保留在这里，作为网络再断时的备用方案。
 - README 重写为对外版：为什么 → 它做什么 → 快速开始 → HANDOFF 字段表 → 配置/接口 → 桌面组件原理 → 目录 → 演示 → FAQ → 已知限制。后来追加了「桌面安装包」双方案对照表与轻量版章节。
 - 公开前把 `demo/index.html` 里的真实项目（newday）换成 `examples/` 下三份虚构数据（`maple-clinic-site`、`episode-12-clips`、`keyboard-practice`），`build-demo.js` 加了 `--root` 与 `build:demo:example`。
 - `.gitignore` 补 `image.png`（设计参考图，含本机路径）、`dist/`、`lite/*.exe|*.png|*.log`、测试临时目录。
@@ -60,6 +60,15 @@ Last-Activity: 2026-11-13
 - **功能等价性用逐字段比对**：同一个 `/api/projects` 请求，Go 版与 Node 版返回用 `util.isDeepStrictEqual` 对比，示例目录与用户真实目录（`D:\1Projects` + `D:\3Data\WorkBuddyData`，3 个项目）各跑一次，除 `generatedAt` 外完全一致。`/api/handoff` 的 markdown 逐字符一致，`/api/reveal` 合法 200 / 非法 404。
 - 窗口层：`next == Progman`（与 Electron 版同级）、`shellOpacity 0.45` 能透出后面的资源管理器且文字可读、拖动 +60/+30 精确且 drag-end 重新贴底并持久化、热键真实注册、单实例第二进程正常退出并通知首实例。
 - 安装器真跑过：一键静默、免 UAC、落盘 9.3 MB、桌面/开始菜单/自启快捷方式 + 卸载注册表齐全、WebView2 已存在时自动跳过引导程序；卸载把目录、快捷方式、自启、进程全清干净（加了 `SilentUninstall silent`）。
+- **真机人工验收（2026-11-14）：用户确认通过，无修改清单**。首启的原生目录选择框、右键面板与两个滑块的真实鼠标操作、重启后位置与透明度记忆，这些此前「自动测不了」的缺口全部补齐。
+
+### 真机验收通过 + 三个提交推送 GitHub（2026-11-14，`521a56f`）
+
+- 按上一版 `Next` 的分支：验收通过 → 走「没问题 → 推 github」。`HANDOFF.md` 改动提交为 `521a56f`；先把本地 `main` 快进到 `dev`，再 `git push origin dev main`，两端都是 `728b50d..521a56f`。
+- **远端此前实际停在 `728b50d`，不是旧文档里记的 `313ff5b`**（`dca596f`、`728b50d` 早已推上去），本地领先的是 3 个提交：`647af4a`、`dd91a7d`、`521a56f`。
+- **环境反转**：`git ls-remote origin` 现在 exit 0，`credential.helper=manager`（Windows Git Credential Manager）里已有凭据，标准 `git push` 一次成功，退出码 0。以后优先试 `git push`，别默认走 API 镜像。
+- 含明文 PAT 的 curl 命令被安全审批拦下（approval timed out），未重试、未绕过，改走系统凭据完成推送。
+- 核对：`git fetch` 后 `git status -sb` 为 `## dev...origin/dev`（无 ahead/behind）；匿名 API 查最近三条提交 = `521a56f` / `dd91a7d` / `647af4a`；远端 `HANDOFF.md` 头部与本地逐字一致。
 
 ### 踩过的坑（下次别再犯）
 
@@ -73,17 +82,15 @@ Last-Activity: 2026-11-13
 
 ### 分支现状
 
-`dev` 与 `main` 都已在 `dd91a7d`（已合并，无落后）。`origin/dev`、`origin/main` 都停在 `313ff5b`，**本地领先 2 个提交**。`ui` 和 `workbuddy/main-622ca596` 停在 `060a285`，可删。
+`dev`、`main`、`origin/dev`、`origin/main` 全部指向 `521a56f`，无 ahead/behind。`ui` 和 `workbuddy/main-622ca596` 停在 `060a285`，可删。
 
 ## Next steps
 
-1. **真机验收第一版 EXE 安装包**（`lite/build/Hands-off-Dashboard-Lite-Setup-1.0.0.exe`）——即还没被人工确认过的那几处，按这个顺序过：双击安装（确认无 UAC 弹窗）→ 第一次启动的原生目录选择框（阻塞式 GUI，自动测不了）→ 看板出卡片 → 拖动 / 右键面板与两个透明度滑块 / 刷新 / 添加移除工作目录（真实鼠标，preload 与 10 个通道已验证但没真点过）/ `Ctrl+Alt+H` 显隐 → 退出后重启，确认位置与不透明度记住 → 卸载干净（目录、快捷方式、自启、注册表、进程）。
-2. **有问题 → 只列清单**：把复现步骤、期望 vs 实际、涉及文件写出来待拍板，不要顺手改代码。
-3. **没问题 → 推 github**：`647af4a`、`dd91a7d` 推到 `origin/dev` 与 `origin/main`，走 Git Data API 镜像，别用 `git push`（github.com 的 git 通道在本机 502）。
-4. **再把安装包变成可下载**：GitHub Release 挂轻量版安装包，否则 `Gate` 过不去。注意 `dist/` 与 `lite/*.exe` 现在被 .gitignore 挡着。
-5. **补 LICENSE**：现在没有许可证等于默认保留所有权利，和 README 里对外推广的口径不一致。MIT 最省事。
-6. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过，去 GitHub Settings → Developer settings 删掉换新的。
-7. 收尾小事：`design-spec.html` 与 `demo/` 是否还留、`ui` 分支删不删、线上静态快照（`npm run build`）还是旧版。
+1. **建 GitHub Release v1.0.0，挂 `lite/build/Hands-off-Dashboard-Lite-Setup-1.0.0.exe`**（4.60 MB）。Release 上传二进制不需要文件进仓库，`dist/` 与 `lite/*.exe` 被 .gitignore 挡着不影响；Release 说明里写清 WebView2 前提和 `npm run dist:lite` 的复现方式。
+2. **补 LICENSE**：现在没有许可证等于默认保留所有权利，和 README 里对外推广的口径不一致。MIT 最省事。
+3. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过，去 GitHub Settings → Developer settings 删掉换新的。
+4. **进「日常常驻」后观察几天**：把轻量版设为开机自启连跑，确认 Win+D、热键、重启后位置记忆都稳定，再把 `Current` 推到下一阶段。
+5. 收尾小事：`design-spec.html` 与 `demo/` 是否还留、`ui` 分支删不删、线上静态快照（`npm run build`）还是旧版。
 
 ## Relevant artifacts
 
