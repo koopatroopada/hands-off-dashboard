@@ -2,7 +2,7 @@ Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件）�
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
 Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
 Current: 安装包分发
-Evidence: 仓库 github.com/koopatroopada/hands-off-dashboard（dev/main 均在 521a56f）；本地 lite/build/Hands-off-Dashboard-Lite-Setup-1.0.0.exe（4.60 MB）已真机验收
+Evidence: 仓库 github.com/koopatroopada/hands-off-dashboard；本地 lite/build/Hands-off-Dashboard-Lite-Setup-1.0.0.exe（4.60 MB）已真机验收
 Gate: GitHub Release 上能直接下载到轻量版安装包，外部机器双击装完、首启选好工作目录即正常出卡片
 Blocker: 仓库里还没有可下载的安装包（Release 未建），也没有 LICENSE
 Next-Determined: DETERMINED
@@ -62,7 +62,7 @@ Last-Activity: 2026-11-14
 - 安装器真跑过：一键静默、免 UAC、落盘 9.3 MB、桌面/开始菜单/自启快捷方式 + 卸载注册表齐全、WebView2 已存在时自动跳过引导程序；卸载把目录、快捷方式、自启、进程全清干净（加了 `SilentUninstall silent`）。
 - **真机人工验收（2026-11-14）：用户确认通过，无修改清单**。首启的原生目录选择框、右键面板与两个滑块的真实鼠标操作、重启后位置与透明度记忆，这些此前「自动测不了」的缺口全部补齐。
 
-### 真机验收通过 + 三个提交推送 GitHub（2026-11-14，`521a56f`）
+### 真机验收通过 + 三个提交推送 GitHub（2026-11-14）
 
 - 按上一版 `Next` 的分支：验收通过 → 走「没问题 → 推 github」。`HANDOFF.md` 改动提交为 `521a56f`；先把本地 `main` 快进到 `dev`，再 `git push origin dev main`，两端都是 `728b50d..521a56f`。
 - **远端此前实际停在 `728b50d`，不是旧文档里记的 `313ff5b`**（`dca596f`、`728b50d` 早已推上去），本地领先的是 3 个提交：`647af4a`、`dd91a7d`、`521a56f`。
@@ -82,7 +82,7 @@ Last-Activity: 2026-11-14
 
 ### 分支现状
 
-`dev`、`main`、`origin/dev`、`origin/main` 全部指向 `521a56f`，无 ahead/behind。`ui` 和 `workbuddy/main-622ca596` 停在 `060a285`，可删。
+本地 `dev`、`main` 与 `origin/dev`、`origin/main` 全部同步，无 ahead/behind（提交号不在文档里写死，否则每次推送即过时）。`ui` 和 `workbuddy/main-622ca596` 停在 `060a285`，可删。
 
 ## Next steps
 
