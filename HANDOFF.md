@@ -1,73 +1,99 @@
-Audience: 我自己（单机自用的项目交接看板 + 桌面组件）
+Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件），以及愿意自己构建的 Windows 用户
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
-Stages: 网页看板 → 桌面组件 → 开机自启 → 数据源统一 → 稳定自用
-Current: 数据源统一
-Evidence: 桌面「项目交接看板」快捷方式双击即启动（含开机自启）；本地看板 http://127.0.0.1:4177
-Gate: dev 分支 6 个提交合并回 main，线上静态快照与本地形态同步
-Blocker: dev 领先 main 未合并；线上快照仍是旧版，且无法承载 Electron 形态
+Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
+Current: 安装包分发
+Evidence: 仓库 github.com/koopatroopada/hands-off-dashboard（线上停在 313ff5b）；本地 lite/build/Hands-off-Dashboard-Lite-Setup-1.0.0.exe（4.60 MB）已实测安装与卸载
+Gate: 外部机器不看源码就能拿到安装包，双击装完、首启选好工作目录即正常出卡片
+Blocker: 两个安装包提交只存在本地，仓库里下载不到安装包，也没有 LICENSE
 Next-Determined: DETERMINED
-Next: git checkout main && git merge dev，把桌面组件与 HANDOFF.md 数据源改造落到 main
+Next: 真机验收第一版 EXE 安装包，如果有问题，列出要修改的地方；如果没有问题，推到 github 上
 Created: 2026-11-03
-Last-Activity: 2026-11-09
+Last-Activity: 2026-11-13
 
-# Handoff: 桌面组件贴桌面 + 开机自启 + 数据源统一到 HANDOFF.md
+# Handoff: 开源发布 + 一键安装包 + 轻量版从 116 MB 压到 4.6 MB
 
-生成时间：2026-11-09 18:31
+生成时间：2026-11-13 09:05
 
 ## Current state
 
-### 桌面组件（Electron，`desktop/`）
+### 开源发布（`313ff5b`、`728b50d`）
 
-透明无边框窗口贴在桌面层，Win+D 回桌面时可见，普通窗口会盖住它。本轮踩透的关键机制：
+- 仓库 <https://github.com/koopatroopada/hands-off-dashboard>，public，默认分支 main。
+- **本机 `github.com` 的 git 通道（clone/push）504-502 超时，只有 `api.github.com` 通**。所以推送不是 `git push`，而是走 Git Data API 逐条镜像：blobs → tree → commit → 更新 ref，SHA 与原提交完全一致。空仓库时 Git Data API 不可用，先用 Contents API 建一个引导提交再 force 覆盖 ref。
+- README 重写为对外版：为什么 → 它做什么 → 快速开始 → HANDOFF 字段表 → 配置/接口 → 桌面组件原理 → 目录 → 演示 → FAQ → 已知限制。后来追加了「桌面安装包」双方案对照表与轻量版章节。
+- 公开前把 `demo/index.html` 里的真实项目（newday）换成 `examples/` 下三份虚构数据（`maple-clinic-site`、`episode-12-clips`、`keyboard-practice`），`build-demo.js` 加了 `--root` 与 `build:demo:example`。
+- `.gitignore` 补 `image.png`（设计参考图，含本机路径）、`dist/`、`lite/*.exe|*.png|*.log`、测试临时目录。
 
-- **Z 序锚点用 Progman 的前邻居**：Win+D 会把 Progman 提到普通窗口前面，组件掉到它后面被壁纸盖住。以 Progman 本身作 `SetWindowPos` 的 hWndInsertAfter 会被 z-band 规则**静默拒绝**（返回 TRUE 但 Z 序不动）；以「Z 序紧挨 Progman 之上的窗口」（`GetWindow(progman, GW_HWNDPREV)`，同 band）作锚点则立即生效。
-- **巡护间隔 50ms**：错位只能事后纠正，间隔=闪没时长；已在位时一次 `GetWindow` 比较即跳过。实测进入「显示桌面」80ms 内归位。
-- `SetParent` 挂 Progman 的方案已放弃（Chromium 透明合成只对顶层窗口生效，子窗口 alpha 失效露灰底）；`SetWindowBand` 也放弃（即便调通也落到 Progman 之后）。
-- `focusable: true` + focus 时立即 pinToBottom：`focusable:false`（WS_EX_NOACTIVATE）会让 Chromium 丢 pointerdown，拖动/菜单关闭/滑条三个 bug 同根因。
-- 拖动用 screenX/screenY 位移 + `SetWindowPos(..., SWP_NOSIZE|SWP_NOZORDER)` 只改坐标（`setBounds` 在 150% 缩放下累积漂移）。
-- 单实例锁：重复启动自动退出。右键面板可调外壳/卡片不透明度，Ctrl+Alt+Q 或右键退出。
+### Electron 安装包（`647af4a`）
 
-### 快捷方式与开机自启（`38ab2cf`）
+- `npm run dist` → `dist/Hands-off-Dashboard-Setup-1.0.0.exe`，**116.13 MB**，NSIS oneClick、x64、未签名、装到当前用户（免 UAC）。
+- 配置在 `electron-builder.yml`，构建入口 `scripts/build-installer.js`（设 `ELECTRON_BUILDER_BINARIES_MIRROR=npmmirror`，因为 github releases 在本机被拦），开机自启靠 `build-resources/installer.nsh` 的 `customInstall/customUnInstall` 宏往 `$SMSTARTUP` 建/删快捷方式。
+- `desktop/main.js` 新增 `ensurePackagedRoots()`：打包版且无已存 roots 时弹原生多选目录框，取消回退 `app.getAppPath()/examples`；`serverOverrides()` 在打包版强制用 roots 覆盖 `config.json` 里写死的 `D:/1Projects`，本地 dev 行为不变。首启流程有测试开关 `HS_SKIP_FIRST_RUN=1`。
+- 两个必须记住的配置：`asar: false`（koffi 的 `.node` 要真实路径）、`files` 白名单必须含 `node_modules/@koromix/koffi-win32-x64/**/*`（`koffi/src/koffi/index.cjs` 按 `${__dirname}/../../../@koromix/koffi-${pkg}` 找原生模块，漏了贴桌面层直接失效）。
 
-- `scripts/install-shortcuts.ps1`（WScript.Shell COM）建桌面 + `shell:startup` 两份 .lnk，均指 `node_modules/electron/dist/electron.exe` + `desktop\main.js`；根目录 `安装快捷方式.bat` / `取消开机自启.bat` 双击即用。
-- 图标 `assets/icon.ico`：`scripts/make-icon.js` 纯 Node 手写 PNG 编码，256×256，配色取自原型 `--frame/--accent`。
-- 坑：快捷方式不能从带 `ELECTRON_RUN_AS_NODE` 的终端启动；系统级环境变量已确认干净，explorer 启动正常。
+### 体积诊断（用户追问「为什么这么大」的答案）
 
-### 数据源统一（`b16b4e3`）
+解压后 359 MB，拆开看：`electron.exe` 238.3 MB（Chromium + V8 + Node 全在里面）、Chromium 配套文件 ~118 MB、**项目自身仅 2.3 MB**，其中自有代码 131 KB / 12 个文件，koffi 2.1 MB。结论：**体积是 Chromium 的门票，与功能复杂度无关**；开不开 asar 不影响总量。这条结论直接导致下一段的换宿主决定。
 
-- `lib/handoff.js`：`HANDOFF_NAME = 'HANDOFF.md'`，`findHandoffFile()` 只看项目根目录的 `HANDOFF.md`；`resolveSpecs()` 忽略 config 里的 `handoff` 字段。
-- `config.json`：`root: D:/1Projects`，两个项目（newday、Hands-off-Dashboard）都不再写 handoff 路径。
-- 本项目交接文档已从 `handoff-20261103-233547-1.md` 迁移为根目录 `HANDOFF.md`（本文件）；纯重复的 `handoff-20261103-233547.md` 已删除。
-- handoff skill（用户级 `~/.workbuddy/skills/handoff`，v1.2.0）：输出路径固定为项目根目录 `HANDOFF.md`，每次整份覆盖更新；`Created` 优先从现有文件读取；`docs/handoff-*.md` 历史归档只作过程记录不当作现状。
-- 测试 12 项全过（新增「config 的 handoff 字段被忽略」+ docs/ 干扰项用例）。
-- 运行时验证：`GET /api/projects` 两张卡均指向各自根目录 `HANDOFF.md`，无报错。
+### 轻量版 `lite/`（`dd91a7d`）
 
-### 多工作目录 + 右键菜单刷新（`615478a`）
+目标由用户给定：功能不变、安装包 ≤ 20 MB、技术栈不限。选型 **Go + 系统自带 WebView2**（本机无 MSVC，Rust/C# 路线排除；`github.com/jchv/go-webview2` 纯 Go 无 CGO、内嵌 WebView2Loader.dll，可直接编译）。Go 1.27.4 装在 `D:\2Enviroment\Go`。
 
-- **每个工作目录下的每个子文件夹都视为一个项目，但只展示含 `HANDOFF.md` 的**：没有交接文档的文件夹直接跳过，看板上不放「找不到交接文档」的空卡片（用户明确要求）。显式 `projects` 清单仍保留错误卡用于诊断。扫描跳过隐藏目录、SKIP_DIRS、git worktree。
-- `config.json` 从单个 `root` 改为 `roots` 数组；`loadConfig` 兼容旧单数 `root`、环境变量、overrides，路径去重。跨工作目录按绝对路径去重。`readProject` 的 relDir/relPath 相对各自所属根目录（spec.root）。
-- **右键菜单新增**：「刷新」（主进程在页面主世界 `executeJavaScript` 派发 `hs-refresh` 事件，页面静默重读，不重载不闪烁）、「工作目录」管理（添加走原生目录选择框支持多选；每条带 × 移除；至少保留一个；改完写状态文件 `%APPDATA%/hands-off-dashboard/desktop-state.json` 并原地突变运行时 config，下一次 `/api/projects` 即时生效，不重启服务）。
-- roots 优先级：组件状态文件 > config.json。`projects` 显式清单保留兼容，常规留空走扫描。
-- 验证：15 项测试全过；CDP 实测面板渲染/刷新链路（事件到达主世界、status 更新）。
+- `main.go` 编排；`data.go` 是 `lib/handoff.js` 的 Go 复刻；`server.go` 实现三个同契约 HTTP 接口并把 `desktop/preload.js` 包成桥脚本注入 `index.html`；`ipc.go` 用 `/api/desktop/<channel>` 复刻 10 个 IPC 通道（与 `desktop/main.js` 同名）；`window.go` 管分层透明窗口、贴底巡护、拖动、DPI、热键；`dialog.go` 用 zenity 做目录多选；`state.go` 复用 `%APPDATA%\hands-off-dashboard\desktop-state.json`，**与 Electron 版共用，两版可互换**。
+- **`preload.js` 一行不改复用**：Go 侧把整个文件包进 IIFE，用 fetch 版 `ipcRenderer` 顶掉 Electron 依赖，再作为 `/__hs/bridge.js` 插到 `</head>` 前。这是省掉重写 UI 逻辑的关键。
+- **透明**：`ICoreWebView2Controller2` 的 vtable 是 `ICoreWebView2Controller` 的超集，用 `unsafe.Pointer` 强转后调 `PutDefaultBackgroundColor(A:0)`，不用 IID/QueryInterface。窗口另加 `WS_EX_LAYERED`。
+- **外观坑**：必须注入 `preload.js` 的 `OVERRIDE_CSS`（`shellOpacity: 1` 把外壳设成不透明白）。不注入时半透明玻璃叠在透明窗口黑底上，看板会整体偏深色——曾被误判成 bug。
+- 贴底沿用 Electron 版结论：`GetWindow(progman, GW_HWNDPREV)` 作 Z 序锚点，每 50 ms 巡护（已在位时一次 `GetWindow` 比较即跳过）。`SetParent` 挂 Progman 的老方案在新宿主里同样不可行（透明合成只对顶层窗口生效）。
 
-### 原型契约
+### 两个宿主的体积对照
 
-`index.html` 的 `<style>` 与原型字节相同，UI 不改；已批准的例外仅「查看全文+路径」行与全文抽屉。样式注入全部在 `desktop/preload.js` 完成。
+| 方案 | 安装包 | 解压后 | 前提 |
+| --- | --- | --- | --- |
+| Electron（`npm run dist`） | 116.13 MB | 359 MB | 无 |
+| Go + WebView2（`npm run dist:lite`） | **4.60 MB** | 9.3 MB | 需系统 WebView2 Runtime（Win11 自带；缺失时安装器调官方引导程序联网补） |
+
+**-96%**，距 20 MB 上限还剩 15.4 MB。轻量版已成为主推方案。
+
+### 验证到什么程度
+
+- `npm test` 15 项全过（两个宿主共用同一套数据层测试）。
+- **功能等价性用逐字段比对**：同一个 `/api/projects` 请求，Go 版与 Node 版返回用 `util.isDeepStrictEqual` 对比，示例目录与用户真实目录（`D:\1Projects` + `D:\3Data\WorkBuddyData`，3 个项目）各跑一次，除 `generatedAt` 外完全一致。`/api/handoff` 的 markdown 逐字符一致，`/api/reveal` 合法 200 / 非法 404。
+- 窗口层：`next == Progman`（与 Electron 版同级）、`shellOpacity 0.45` 能透出后面的资源管理器且文字可读、拖动 +60/+30 精确且 drag-end 重新贴底并持久化、热键真实注册、单实例第二进程正常退出并通知首实例。
+- 安装器真跑过：一键静默、免 UAC、落盘 9.3 MB、桌面/开始菜单/自启快捷方式 + 卸载注册表齐全、WebView2 已存在时自动跳过引导程序；卸载把目录、快捷方式、自启、进程全清干净（加了 `SilentUninstall silent`）。
+
+### 踩过的坑（下次别再犯）
+
+- **`ELECTRON_RUN_AS_NODE=1` + `NODE_OPTIONS=--require ...shim` 只在 agent 终端里注入**，直接跑打包后的 exe 会退化成纯 Node。冒烟测试必须 `env -u ELECTRON_RUN_AS_NODE -u NODE_OPTIONS`。已确认 User/Machine 级环境变量是干净的，用户双击快捷方式不受影响。
+- NSIS：`File /oname=` **不能带引号**（报 "output name must not begin with a quote"），所以 exe 名改成 `Hands-off-Dashboard.exe`（无空格）；路径含中文时 `.nsi` 必须带 **UTF-8 BOM**，否则报 "Bad text encoding"；Git Bash 会把 `/INPUTCHARSET` 当路径转换，不可用。
+- 自写诊断工具（`lite/tools/probe`）是 **DPI 不感知**进程，`GetWindowRect` 返回虚拟化坐标（1002×662 @150%），会被误判成 DPI bug。以宿主自身日志（DPI 感知，1503×993 物理）为准。
+- 贴底巡护每 50 ms 把窗口拉回，所以「临时置顶截图」会被瞬间撤销；要截图得 `HS_NO_ATTACH=1`。
+- 从 Bash 用 `&` 启动的 exe 会随父 shell 退出被连带杀掉，看起来像「应用自己退出」。用后台任务方式启动才稳定。
+- 安全策略拦截了 `csc.exe`、PowerShell `Add-Type`、从 Bash 调 PowerShell —— 截屏最后是用 Go + Win32 GDI 自己写的（`lite/tools/shot`）。
+- Go 的 `time.Format` 是截断毫秒，JS `toISOString()` 是四舍五入，`isoTime()` 里手动补了这半毫秒。
+
+### 分支现状
+
+`dev` 与 `main` 都已在 `dd91a7d`（已合并，无落后）。`origin/dev`、`origin/main` 都停在 `313ff5b`，**本地领先 2 个提交**。`ui` 和 `workbuddy/main-622ca596` 停在 `060a285`，可删。
 
 ## Next steps
 
-1. **合并 dev → main**（dev 领先 main 多个提交：桌面组件全套修复 + 快捷方式 + 数据源统一 + 多工作目录）。
-2. 两个无引用文件待拍板：`design-spec.html`、`image.png`。
-3. 线上静态快照（`npm run build` 产物）仍是旧版，需重新构建发布；线上形态无法承载桌面组件，定位为演示。
-4. ~~右键「添加目录…」的原生对话框只能人工验证~~ → 用户已实测添加成功，当前工作目录为 `D:/1Projects` + `D:/3Data/WorkBuddyData`（后者 7 个文件夹均无 HANDOFF.md，按新规则全部跳过，看板仍只有 2 张卡）。
+1. **真机验收第一版 EXE 安装包**（`lite/build/Hands-off-Dashboard-Lite-Setup-1.0.0.exe`）——即还没被人工确认过的那几处，按这个顺序过：双击安装（确认无 UAC 弹窗）→ 第一次启动的原生目录选择框（阻塞式 GUI，自动测不了）→ 看板出卡片 → 拖动 / 右键面板与两个透明度滑块 / 刷新 / 添加移除工作目录（真实鼠标，preload 与 10 个通道已验证但没真点过）/ `Ctrl+Alt+H` 显隐 → 退出后重启，确认位置与不透明度记住 → 卸载干净（目录、快捷方式、自启、注册表、进程）。
+2. **有问题 → 只列清单**：把复现步骤、期望 vs 实际、涉及文件写出来待拍板，不要顺手改代码。
+3. **没问题 → 推 github**：`647af4a`、`dd91a7d` 推到 `origin/dev` 与 `origin/main`，走 Git Data API 镜像，别用 `git push`（github.com 的 git 通道在本机 502）。
+4. **再把安装包变成可下载**：GitHub Release 挂轻量版安装包，否则 `Gate` 过不去。注意 `dist/` 与 `lite/*.exe` 现在被 .gitignore 挡着。
+5. **补 LICENSE**：现在没有许可证等于默认保留所有权利，和 README 里对外推广的口径不一致。MIT 最省事。
+6. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过，去 GitHub Settings → Developer settings 删掉换新的。
+7. 收尾小事：`design-spec.html` 与 `demo/` 是否还留、`ui` 分支删不删、线上静态快照（`npm run build`）还是旧版。
 
 ## Relevant artifacts
 
-- `desktop/main.js` — 窗口层级、拖动、单实例、状态持久化（`%APPDATA%/hands-off-dashboard/desktop-state.json`）
-- `desktop/preload.js` — 透明化样式注入、拖动/右键面板交互
-- `lib/handoff.js` — HANDOFF.md 解析与数据源（根目录固定路径）
-- `scripts/install-shortcuts.ps1`、`安装快捷方式.bat`、`取消开机自启.bat`、`assets/icon.ico`
-- `~/.workbuddy/skills/handoff/SKILL.md` — v1.2.0，输出固定为 HANDOFF.md
+- `lite/` — Go 宿主全部源码；`lite/installer.nsi` 安装脚本；`scripts/build-lite.js`（`npm run dist:lite`，可用 `GO_BIN` / `NSIS_MAKENSIS` 覆盖工具链路径）
+- `desktop/main.js`、`desktop/preload.js` — Electron 宿主；preload 的 `OVERRIDE_CSS` 被 Go 版直接复用
+- `lib/handoff.js` — HANDOFF.md 解析与数据源（根目录固定路径），`lite/data.go` 是它的复刻
+- `electron-builder.yml`、`build-resources/installer.nsh`、`scripts/build-installer.js` — Electron 打包链路
+- `lite/tools/probe`、`lite/tools/shot` — z-order 诊断与 GDI 截屏
+- `examples/*/HANDOFF.md` — 三份虚构示例数据，对外演示用
+- <https://github.com/koopatroopada/hands-off-dashboard>
 
 ## Suggested skills
 
