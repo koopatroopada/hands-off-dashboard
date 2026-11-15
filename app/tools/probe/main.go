@@ -56,7 +56,7 @@ func describe(h uintptr, label string) {
 }
 
 func main() {
-	cls := "hs-lite-window"
+	cls := "hs-dashboard-window"
 	if v := os.Getenv("HS_WINDOW_CLASS"); v != "" {
 		cls = v
 	}

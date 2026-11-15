@@ -1,7 +1,7 @@
 package main
 
-// 配置与状态：与 Electron 版共用同一份 config.json / desktop-state.json，
-// 因此从桌面版切过来时窗口位置、透明度、工作目录都还在。
+// 配置与状态：config.json 提供默认工作目录，
+// %APPDATA%/hands-off-dashboard/desktop-state.json 保存窗口位置、透明度与工作目录。
 
 import (
 	"encoding/json"
@@ -31,8 +31,7 @@ type ProjectConfig struct {
 }
 
 // State 对应 %APPDATA%/hands-off-dashboard/desktop-state.json。
-// 指针字段用来区分「没存过」和「存了 0」；未识别的字段读取时丢弃，
-// 但 Electron 版只会写下面这些，行为一致。
+// 指针字段用来区分「没存过」和「存了 0」；未识别的字段读取时丢弃。
 type State struct {
 	X            *int     `json:"x,omitempty"`
 	Y            *int     `json:"y,omitempty"`
@@ -62,7 +61,7 @@ func initPaths() {
 	}
 	statePath = filepath.Join(userDataDir, "desktop-state.json")
 
-	// Electron 曾把 userData 落到通用的 Electron 目录，迁移一次（与主进程一致）。
+	// 兼容早期版本的状态文件位置，迁移一次。
 	legacy := filepath.Join(appData, "Electron", "desktop-state.json")
 	if _, err := os.Stat(statePath); os.IsNotExist(err) {
 		if b, e := os.ReadFile(legacy); e == nil {
@@ -86,7 +85,7 @@ func readState() State {
 	return s
 }
 
-// writeState 读-合并-写，语义等价于 Electron 版 { ...readState(), ...patch }。
+// writeState 读-合并-写，保留调用方未指定的字段。
 func writeState(patch State) State {
 	stateMu.Lock()
 	defer stateMu.Unlock()
@@ -140,7 +139,7 @@ func posixRel(base, target string) string {
 	return toPosix(rel)
 }
 
-// loadConfig 复刻 lib/handoff.js 的 loadConfig：
+// loadConfig 读取 config.json 并合并运行时覆盖的工作目录：
 // overrides.roots > overrides.root > DASHBOARD_ROOT > 配置文件 > appDir 上一级。
 func loadConfig(appDir string, overrideRoots []string) Config {
 	cfg := Config{Port: 4177, Open: true}

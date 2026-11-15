@@ -1,8 +1,8 @@
 package main
 
 // HANDOFF.md 解析与 /api/projects 数据组装。
-// 逐条复刻 lib/handoff.js（含字段名、null 语义、错误文案、边界处理），
-// 保证前端 index.html 与现有测试的数据契约完全不变。
+// 字段名、null 语义、错误文案与边界处理都在这里统一定义，
+// 输出结构即 index.html 直接使用的数据契约。
 
 import (
 	"os"

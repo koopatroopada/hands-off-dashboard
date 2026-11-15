@@ -1,6 +1,6 @@
-﻿; Hands-off Dashboard · 轻量版一键安装包
-; 与 Electron 版安装包行为一致：免 UAC、装到当前用户目录、装完立刻启动，
-; 附桌面/开始菜单快捷方式、开机自启、卸载入口；缺 WebView2 运行时时静默补齐。
+﻿; Hands-off Dashboard · 一键安装包
+; 免 UAC、装到当前用户目录、装完立刻启动，附桌面/开始菜单快捷方式、
+; 开机自启与卸载入口；缺 WebView2 运行时时静默补齐。
 
 Unicode true
 SetCompressor /SOLID lzma
@@ -9,11 +9,11 @@ SetCompressor /SOLID lzma
 !define APP_EXE        "Hands-off-Dashboard.exe"
 !define APP_VERSION    "1.0.0"
 !define APP_PUBLISHER  "Hands-off Dashboard"
-!define UNINST_KEY     "Software\Microsoft\Windows\CurrentVersion\Uninstall\HandsOffDashboardLite"
+!define UNINST_KEY     "Software\Microsoft\Windows\CurrentVersion\Uninstall\HandsOffDashboard"
 !define WV2_CLIENT_ID  "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 
 Name "${APP_NAME}"
-OutFile "build\Hands-off-Dashboard-Lite-Setup-${APP_VERSION}.exe"
+OutFile "build\Hands-off-Dashboard-Setup-${APP_VERSION}.exe"
 InstallDir "$LOCALAPPDATA\Programs\Hands-off Dashboard"
 InstallDirRegKey HKCU "Software\Hands-off Dashboard" "InstallDir"
 RequestExecutionLevel user
@@ -42,13 +42,13 @@ Section "Install"
   SetShellVarContext current
   SetOutPath "$INSTDIR"
 
-  File /oname=${APP_EXE} "hs-lite.exe"
+  File /oname=${APP_EXE} "hs-dashboard.exe"
   File "..\index.html"
   File "..\config.json"
   File /oname=icon.ico "..\assets\icon.ico"
   File "build\MicrosoftEdgeWebview2Setup.exe"
-  SetOutPath "$INSTDIR\desktop"
-  File "..\desktop\preload.js"
+  SetOutPath "$INSTDIR\ui"
+  File "..\ui\preload.js"
   SetOutPath "$INSTDIR\examples"
   File /r "..\examples\*.*"
   SetOutPath "$INSTDIR"
@@ -108,8 +108,8 @@ Section "Uninstall"
   Delete "$INSTDIR\index.html"
   Delete "$INSTDIR\config.json"
   Delete "$INSTDIR\icon.ico"
-  Delete "$INSTDIR\desktop\preload.js"
-  RMDir "$INSTDIR\desktop"
+  Delete "$INSTDIR\ui\preload.js"
+  RMDir "$INSTDIR\ui"
   RMDir /r "$INSTDIR\examples"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"

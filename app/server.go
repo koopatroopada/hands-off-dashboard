@@ -1,9 +1,8 @@
 package main
 
-// 本地 HTTP 服务：/、三个 /api 端点与 server.js 完全同契约。
-// 另外提供 /api/desktop/<channel>，把 Electron 的 ipcRenderer 调用映射成
-// 普通的同源 POST——这样 desktop/preload.js 里那套右键面板、滑块、拖动逻辑
-// 一行都不用改，只需把 require('electron') 换成这个 shim。
+// 本地 HTTP 服务：页面、三个 /api 端点，以及桌面交互用的 /api/desktop/<channel>。
+// /api/desktop 把界面层的 ipcRenderer 调用映射成同源 POST，
+// 这样 ui/preload.js 里的右键面板、滑块、拖动逻辑可以直接复用。
 
 import (
 	"encoding/json"
@@ -15,14 +14,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
-var (
-	gBaseURL          string
-	reRequireElectron = regexp.MustCompile(`(?m)^\s*const\s*\{\s*ipcRenderer\s*\}\s*=\s*require\('electron'\);\s*$`)
-)
+var gBaseURL string
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	b, _ := json.Marshal(v)
@@ -40,14 +35,14 @@ func writeText(w http.ResponseWriter, status int, text string) {
 	_, _ = io.WriteString(w, text)
 }
 
-// bridgeJS 把现成的 preload.js 包进一个 IIFE，并用 fetch 版 ipcRenderer 替换 Electron 依赖。
+// bridgeJS 把 ui/preload.js 包进 IIFE，并在最前面注入基于同源 POST 的 ipcRenderer。
 func bridgeJS() []byte {
-	src, err := os.ReadFile(filepath.Join(gApp.appDir, "desktop", "preload.js"))
+	src, err := os.ReadFile(filepath.Join(gApp.appDir, "ui", "preload.js"))
 	if err != nil {
 		log.Printf("读取 preload.js 失败：%v", err)
 		return []byte("")
 	}
-	body := reRequireElectron.ReplaceAllString(string(src), "")
+	body := string(src)
 
 	shim := `(function(){
   const ipcRenderer = {
@@ -102,7 +97,7 @@ func openInExplorer(target string) {
 	_ = exec.Command("explorer.exe", "/select,"+win).Start()
 }
 
-// findProject 与 server.js 的 findProject 一致（按 id 匹配）。
+// findProject 按 id 匹配项目。
 func findProject(p payload, id string) *project {
 	for i := range p.Projects {
 		if p.Projects[i].ID == id {

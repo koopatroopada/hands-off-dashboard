@@ -1,4 +1,4 @@
-# ---- 操作系统 / 资源管理器 ----
+# ---- 操作系统 ----
 Thumbs.db
 ehthumbs.db
 desktop.ini
@@ -12,36 +12,29 @@ $RECYCLE.BIN/
 *.swo
 *~
 
-# ---- WorkBuddy 本地工作区数据（会话、记忆、临时缓存、应用发布标记）----
+# ---- WorkBuddy 本地工作区数据（会话、记忆、临时缓存、发布标记）----
 .workbuddy/
 *.genie
 *.artifact.json
 
-# ---- 依赖与构建产物（当前为纯静态页面，预留）----
+# ---- 依赖与构建产物（源码进仓库，二进制不进）----
 node_modules/
-dist/
 build/
-.output/
-.cache/
+dist/
 demo/
+*.exe
 
-# ---- 本机素材（不外发）----
+# ---- 本机调试残留 ----
+app/*.png
+app/.t*/
+app/.a*/
+app/.h*/
+app/.d*/
+app/.testdata/
+app/.statedir
 image.png
-
-# ---- 轻量宿主（Go + WebView2）：源码保留，产物与本机测试状态不外发 ----
-lite/**/*.exe
-lite/*.png
-lite/*.log
-lite/.t*/
-lite/.a*/
-lite/.h*/
-lite/.d*/
-lite/.testdata/
-lite/.statedir
 
 # ---- 日志与临时文件 ----
 *.log
-npm-debug.log*
-yarn-error.log*
 *.tmp
 *.bak

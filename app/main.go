@@ -1,10 +1,10 @@
 package main
 
-// Hands-off Dashboard · 轻量版桌面宿主
+// Hands-off Dashboard · Windows 桌面宿主
 //
-// 用系统 WebView2 取代 Electron，index.html / desktop/preload.js / config.json
-// / HANDOFF.md 解析规则 / desktop-state.json 全部沿用，功能与 Electron 版等价。
-// 编译产物是单个 GUI exe（无控制台窗口），配合 NSIS 安装包约 3 MB。
+// 用系统自带的 WebView2 承载 index.html，配合 Win32 分层透明窗口贴在桌面层。
+// 界面、配置、HANDOFF.md 解析与状态持久化都在这里组装。
+// 编译产物是单个 GUI exe（无控制台窗口），由 NSIS 打成一键安装包。
 
 import (
 	"log"
@@ -39,11 +39,11 @@ func detectAppDir() (string, bool) {
 		return ".", false
 	}
 	dir := filepath.Dir(exe)
-	// 安装版：exe 与 index.html / examples / desktop 放同一目录。
+	// 安装版：exe 与 index.html / examples / ui 放同一目录。
 	if _, err := os.Stat(filepath.Join(dir, "index.html")); err == nil {
 		return dir, true
 	}
-	// 开发版：exe 在 <项目根>/lite 下。
+	// 开发版：exe 在 <项目根>/app 下。
 	return filepath.Clean(filepath.Join(dir, "..")), false
 }
 
@@ -73,7 +73,7 @@ func main() {
 	initPaths()
 	setupLogging()
 	log.SetFlags(log.Ldate | log.Ltime)
-	log.Printf("Hands-off Dashboard lite %s 启动", appVersion)
+	log.Printf("Hands-off Dashboard %s 启动", appVersion)
 
 	appDir, packaged := detectAppDir()
 	gApp = &App{appDir: appDir, packaged: packaged, debugTopmost: os.Getenv("HS_TOPMOST") == "1"}

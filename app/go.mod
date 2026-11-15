@@ -1,4 +1,4 @@
-module hands-off-dashboard-lite
+module hands-off-dashboard
 
 go 1.27.4
 

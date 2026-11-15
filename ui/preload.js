@@ -8,7 +8,8 @@
  * 4. 拖动：位移阈值判定 + 主进程 SetWindowPos 只改坐标
  */
 
-const { ipcRenderer } = require('electron');
+// ipcRenderer 由宿主注入：启动时本文件会被包进 /__hs/bridge.js，
+// 宿主在最前面提供基于同源 POST 的实现，因此这里不需要任何模块加载器。
 
 const STYLE_ID = 'hs-desktop-style';
 const PANEL_ID = 'hs-desktop-panel';

@@ -1,7 +1,7 @@
 package main
 
 // Win32 宿主窗口：无边框分层透明窗口、桌面贴底巡护、拖动/缩放、DPI、
-// 单实例、全局热键、状态持久化。层级算法与 desktop/main.js 完全一致。
+// 单实例、全局热键、状态持久化，以及桌面层的 Z 序巡护。
 
 import (
 	"fmt"
@@ -102,7 +102,7 @@ const (
 
 	defaultWidth  = 1000
 	defaultHeight = 660
-	windowClass   = "hs-lite-window"
+	windowClass   = "hs-dashboard-window"
 )
 
 type wndClassExW struct {
@@ -436,7 +436,7 @@ func wndproc(hwnd, umsg, wp, lp uintptr) uintptr {
 }
 
 func registerSingleInstanceOrNotify() bool {
-	name, _ := windows.UTF16PtrFromString(`Local\HandsOffDashboardLite`)
+	name, _ := windows.UTF16PtrFromString(`Local\HandsOffDashboard`)
 	_, _, lastErr := pCreateMutexW.Call(0, 0, uintptr(unsafe.Pointer(name)))
 	if errno, ok := lastErr.(syscall.Errno); ok && uint32(errno) == errorAlready {
 		class, _ := windows.UTF16PtrFromString(windowClass)
@@ -573,7 +573,7 @@ func setupWebView() error {
 	} else {
 		log.Print("透明背景已设置 (alpha=0)")
 	}
-	// 禁用 WebView2 自带的右键菜单 / Ctrl+滚轮缩放，与 Electron 版一致。
+	// 禁用 WebView2 自带的右键菜单 / Ctrl+滚轮缩放。
 	chrome.Init(`(function(){
   document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, true);
   document.addEventListener('wheel', function(e){ if(e.ctrlKey) e.preventDefault(); }, {passive:false, capture:true});
@@ -622,7 +622,7 @@ func setupLogging() {
 		return
 	}
 	_ = os.MkdirAll(userDataDir, 0o755)
-	f, err := os.OpenFile(filepath.Join(userDataDir, "lite.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(filepath.Join(userDataDir, "dashboard.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	if err == nil {
 		log.SetOutput(f)
 	}

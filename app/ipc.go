@@ -1,7 +1,7 @@
 package main
 
-// /api/desktop/<channel> —— 与 desktop/main.js 的 ipcMain.handle / ipcMain.on 一一对应。
-// 返回值的字段名、去重规则、「至少保留一个目录」等边界都照搬原实现。
+// /api/desktop/<channel> —— 界面层交互的 10 个动作，全部走同源 POST。
+// 返回值的字段名、去重规则、「至少保留一个目录」等边界在这里统一处理。
 
 import (
 	"encoding/json"
