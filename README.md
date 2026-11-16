@@ -40,6 +40,7 @@
 | 操作 | 效果 |
 | --- | --- |
 | 拖动卡片或空白处 | 移动位置（自动记住） |
+| 把鼠标移到四边 / 四角再拖动 | 光标变成拉伸图标，按住即可改窗口大小（自动记住，最小 460×280） |
 | 右键 | 外观面板：外壳 / 卡片不透明度、刷新、工作目录管理、退出 |
 | `Ctrl+Alt+H` | 隐藏 / 显示 |
 | `Ctrl+Alt+Q` | 退出 |
@@ -98,13 +99,13 @@ npm run dist
 ```
 index.html          单文件界面（内联 CSS/JS，无外部依赖）
 config.json         默认工作目录与端口
-ui/preload.js       桌面态样式、右键面板、拖动交互
+ui/preload.js       桌面态样式、右键面板、拖动与边缘拉伸交互
 app/                Windows 桌面宿主（Go + 系统 WebView2）
   main.go           启动编排：单实例、服务、建窗
-  window.go         分层透明窗口、贴底巡护、拖动、DPI、热键
+  window.go         分层透明窗口、贴底巡护、拖动 / 拉伸、DPI、热键
   data.go           HANDOFF.md 解析与数据组装
   server.go         本地服务 + 把 preload.js 包成桥脚本注入页面
-  ipc.go            桌面交互的 10 个动作
+  ipc.go            桌面交互的 12 个动作
   dialog.go         原生目录多选
   state.go          配置与状态持久化
   installer.nsi     一键安装包脚本

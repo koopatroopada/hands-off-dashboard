@@ -1,6 +1,6 @@
 package main
 
-// /api/desktop/<channel> —— 界面层交互的 10 个动作，全部走同源 POST。
+// /api/desktop/<channel> —— 界面层交互的 12 个动作，全部走同源 POST。
 // 返回值的字段名、去重规则、「至少保留一个目录」等边界在这里统一处理。
 
 import (
@@ -195,6 +195,19 @@ func serveDesktopIPC(w http.ResponseWriter, r *http.Request, channel string) {
 
 	case "desktop:drag-end":
 		postUI(dragEnd)
+		writeJSON(w, 200, nil)
+
+	case "desktop:resize-start":
+		if m, ok := raw.(map[string]any); ok {
+			if edge, ok := m["edge"].(string); ok {
+				postUI(func() { resizeStart(edge) })
+			}
+		}
+		writeJSON(w, 200, nil)
+
+	case "desktop:resize-end":
+		// 兜底：网页若抢在宿主捕获前收到 pointerup，也能主动收尾。
+		postUI(resizeEnd)
 		writeJSON(w, 200, nil)
 
 	case "desktop:quit":
