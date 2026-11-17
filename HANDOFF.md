@@ -2,13 +2,13 @@ Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件）�
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
 Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
 Current: 日常常驻
-Evidence: GitHub Release v1.0.0 的 Hands-off-Dashboard-Setup-1.0.0.exe（4.60 MB），下载双击即装，无需管理员权限
+Evidence: GitHub Release v1.0.0 的 asset 已换成含全部修复的 4.61 MB 新包（SHA256 f690f8…2813），匿名下载校验一致，双击即装无需管理员权限；源码已提交推送到 dev
 Gate: 连续一周开机自启都正常显示卡片，且至少一位外部用户不看 README 也能独立装好
-Blocker: 还没有外部用户实际安装过；仓库也没有 LICENSE
+Blocker: 还没有外部用户实际安装过；仓库没有 LICENSE
 Next-Determined: DETERMINED
-Next: 补一份 MIT LICENSE，并把安装包链接交给第一位外部用户试用
+Next: 补 MIT LICENSE、吊销泄露的 PAT、把安装包链接交给第一位外部用户试用（不看 README 只给链接，确认能独立装好）
 Created: 2026-11-03
-Last-Activity: 2026-11-15
+Last-Activity: 2026-11-17
 
 # Handoff: 仓库收敛为单一桌面版本，安装包发布为 Release
 
@@ -73,6 +73,18 @@ Last-Activity: 2026-11-15
 - 之前几轮的 WM_ERASEBKGND、去 CS_HREDRAW/VREDRAW、`WEBVIEW2_DEFAULT_BACKGROUND_COLOR` 环境变量、wmSize 去掉逐帧 applyTransparency 等改动**都保留着**（无害，环境变量还避免首帧闪白），但它们不是根因；真正起作用的是删 SetLayeredWindowAttributes + 加 NOREDIRECTIONBITMAP。
 - 拉伸功能回归通过（顶边高度 662→742、最小宽钳制 460、状态持久化）；左右拉伸测试在窗口贴屏幕右边缘时会因鼠标出界误报 FAIL，是测试脚本几何限制，非功能问题。安装包重建 4.61 MB（4,833,501 字节）。
 - **GitHub Release 的 v1.0.0 仍是更早的包**；本地 4.61 MB 安装包已含黑角 + 黑底两处修复，尚未上传，外部用户暂时用不到。
+
+### 代码已提交并推送（2026-11-17）
+
+- 拉伸、黑角、黑底三处修复连同 README / HANDOFF 一起提交，commit 信息 `feat(desktop): 边缘拉伸 + 修复透明黑底`；按约定交接文档不写死提交号，避免每次推送即过时。
+- `git push origin dev` 一次成功（这次 github.com git 通道没抽风）；本地与远端 `dev` 的 SHA 用 `git ls-remote` 核对一致，工作区干净。
+
+### Release asset 已替换（2026-11-17）
+
+- 用 `.workbuddy/gh-release-upload.js`（一次性脚本，用完已删）走 GitHub API：先把 `app/build/Hands-off-Dashboard-Setup-1.0.0.exe`（4,832,683 字节）以临时名上传 → 校验服务端 digest 与本地 SHA256 一致 → 删除旧 asset（4,828,145 字节，已下载 3 次）→ PATCH 改回正式名 → tag 端点复查只剩 1 个 asset。
+- **坑**：上传后立刻 PATCH 改名返回 200 但名字没变（新 asset 的传播延迟），隔几秒单独重试 PATCH 才生效；所以别在一次脚本里假设改名即时可见，末尾要再 GET 复查。
+- 匿名 curl 下载公开直链校验：4,832,683 字节，SHA256 `f690f873de10f7849c92cd28c5e18f76d91c73b491403cfef776145ca1462813` 与本地完全一致 → 外部用户拿到的就是含全部修复的新包。
+- 令牌走 `git credential fill`（Windows Git 凭据管理器），命令和脚本都不出现明文 PAT。
 
 ### 技术要点（改动前务必读）
 
