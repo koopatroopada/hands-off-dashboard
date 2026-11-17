@@ -2,13 +2,13 @@ Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件）�
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
 Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
 Current: 日常常驻
-Evidence: GitHub Release v1.0.0 的 Hands-off-Dashboard-Setup-1.0.0.exe（4.60 MB），下载双击即装，无需管理员权限
+Evidence: GitHub Release v1.0.0 的 asset 已换成含全部修复的 4.61 MB 新包（SHA256 f690f8…2813），匿名下载校验一致，双击即装无需管理员权限；源码已提交推送到 dev
 Gate: 连续一周开机自启都正常显示卡片，且至少一位外部用户不看 README 也能独立装好
-Blocker: 还没有外部用户实际安装过；仓库也没有 LICENSE
+Blocker: 还没有外部用户实际安装过；仓库没有 LICENSE
 Next-Determined: DETERMINED
-Next: 补一份 MIT LICENSE，并把安装包链接交给第一位外部用户试用
+Next: 补 MIT LICENSE、吊销泄露的 PAT、把安装包链接交给第一位外部用户试用（不看 README 只给链接，确认能独立装好）
 Created: 2026-11-03
-Last-Activity: 2026-11-15
+Last-Activity: 2026-11-17
 
 # Handoff: 仓库收敛为单一桌面版本，安装包发布为 Release
 
@@ -53,10 +53,43 @@ Last-Activity: 2026-11-15
 - tag `v1.0.0`，asset `Hands-off-Dashboard-Setup-1.0.0.exe`，直链写在 README 的「下载安装」里：`https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.0.0/Hands-off-Dashboard-Setup-1.0.0.exe`。
 - README 已重写成面向使用者的单一叙事：为什么 → 下载双击 → 它做什么 → 日常操作 → 写 HANDOFF.md → 自己构建 → 目录 → 常见问题。全文不出现「轻量版 / Electron / 双方案对比」。
 
+### 边缘拉伸（2026-11-15）
+
+- 需求：鼠标移到窗口四边 / 四角变成对应拉伸光标，按住可改窗口大小，尺寸自动记住。
+- 实现：`ui/preload.js` 在 body 挂 8 个 fixed 感应区（8px 边 / 16px 角，CSS `ew-resize` / `ns-resize` / `nwse-resize` / `nesw-resize`），`pointerdown` 只发方向；`app/window.go` 用 `SetCapture` 接管鼠标，`WM_MOUSEMOVE` 按 `GetCursorPos` 的物理位移改矩形，`WM_LBUTTONUP` / `WM_CANCELMODE` / `WM_CAPTURECHANGED` 收尾；`wmSize` 里原有的 `chrome.Resize()` 让界面跟着变。新增 `desktop:resize-start` / `desktop:resize-end` 两个通道（共 12 个）。
+- **关键坑**：原先 `WM_NCHITTEST` 对边缘返回 `HTLEFT` 等边框值，系统会把那几像素当非客户区，网页压根收不到 `pointerdown`。现在 hit-test 全部委托 `DefWindowProc` 转发给 WebView2 子窗口。另一个坑是缩小窗口时鼠标会跑出 WebView2，所以不能用网页 `pointermove`，必须用 Win32 捕获。
+- 尺寸全程物理像素；最小 460×280 逻辑像素（乘 DPI）、最大 1.5 倍工作区；从左边 / 上边拉伸时右 / 下边缘不动；拉伸期间暂停 50 ms 贴底巡护，避免 Z 序 `SetWindowPos` 抢窗口状态。
+- 自动化真机验证（模拟鼠标拖拽）：左右 843→963→763、顶边上拖 80 使高度 662→742 且 top 235→155、左边缘拖到极限被钳制在 460 且右边缘不动；`GetCursorInfo` 读到的 8 个边缘 / 角光标全部命中预期系统图标；`desktop-state.json` 正确写入 x/y/width/height。新包 `npm run dist` 4.61 MB（4,830,673 字节）。
+- **拉伸时四角出现黑色尖角（已修）**：分层窗口 resize 后新扩展出来的表面默认是不透明黑，而圆角外那几块页面从不绘制，于是四个角留下黑三角且松手后也不消失。先试了「每次 `WM_SIZE` 重设 `DefaultBackgroundColor(A:0)` + 强制重绘」和「把 body 背景改成 alpha=1/255 逼 Chromium 光栅化整块视口」，两种都实测无效——黑色来自窗口表面本身，不是页面背景色能覆盖的。最终用 `SetWindowRgn` + `CreateRoundRectRgn` 把窗口裁成和 `.app-shell` 一致的圆角（半径 26/20/16 CSS px 随断点、乘 DPI），每次 `WM_SIZE` 重设 region；四角感应区从 16px 放宽到 22px，保证裁剪后仍按得住。
+- 复现与量化工具 `.workbuddy/tools/repro-black.go`（拖动前 / 刚起步 / 拖动中 / 松手后四张截图）、`png-check.go`（统计四角与全图纯黑像素）：修复前松手后四角 9.9%、全图 1152 个纯黑像素；修复后拉大与缩小全过程都是 0。裁剪后 8 个边 / 角光标仍全部正确（`cursor-check.go` 9/9）。
+- 调试开关 `HS_ALLOW_MULTI=1` 让开发实例与已运行的正式实例并存（端口自动顺延），配合 `HS_TOPMOST=1` / `HS_STATE_DIR` 可隔离复现，默认关闭不影响正式版。
+
+### 整窗黑底不透明（真根因，2026-11-17 已修复并验证）
+
+- 用户最终发来截图：整个看板是纯黑底、卡片深灰、文字发白，桌面壁纸完全透不出来——不是「拉伸瞬间闪黑」，而是**透明从头到尾就没生效**。之前纠结拉伸时序、WM_ERASEBKGND、环境变量都是走错方向。
+- **唯一真根因**：`createWindow()` 里调了 `SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA)`。bAlpha=255 会把整个分层窗口**强制设为不透明**，直接压掉 WebView2 `PutDefaultBackgroundColor(A:0)` 的透明像素 → 全黑。参 ellermister/win-desktop（Golang+WebView2 透明异形窗口）明确记载：「SetLayeredWindowAttributes(...,255,LWA_ALPHA) 会强制窗口不透明，导致 WebView2 透明像素变黑，必须移除」。
+- **修复（app/window.go）**：① 删掉 `SetLayeredWindowAttributes` 调用；② `exStyle` 从 `WS_EX_LAYERED|WS_EX_TOOLWINDOW` 改为 `WS_EX_LAYERED|WS_EX_NOREDIRECTIONBITMAP(0x00200000)|WS_EX_TOOLWINDOW`——让 WebView2 的 DirectComposition 表面直连桌面合成，这是透明的关键；③ `hitTest` 把 `DefWindowProc` 返回的 `HTTRANSPARENT(-2)` 强制改回 `HTCLIENT(1)`，否则透明区点击穿透到桌面；④ 圆角继续靠 `SetWindowRgn` + CSS `border-radius:26px` 双层保障。
+- **验证方法（重要经验）**：GDI `BitBlt` / `PrintWindow` 抓 WebView2 分层窗口时透明像素一律被填黑，**不能用来判断透明**。可信方法是用 `.workbuddy/tools/screen-grab.go`：抓「窗口显示」与「ShowWindow(hide) 后露出桌面」两幅屏幕图比均值。修复后：显示 RGB(243,243,245) vs 隐藏 RGB(244,246,249)，差值仅 8 → 透明生效；肉眼看 `screen-shown.png` 是白底看板、圆角透桌面、无黑角，拉伸后截图同样白底正常。修复前均值是 40-50 的黑。
+- 之前几轮的 WM_ERASEBKGND、去 CS_HREDRAW/VREDRAW、`WEBVIEW2_DEFAULT_BACKGROUND_COLOR` 环境变量、wmSize 去掉逐帧 applyTransparency 等改动**都保留着**（无害，环境变量还避免首帧闪白），但它们不是根因；真正起作用的是删 SetLayeredWindowAttributes + 加 NOREDIRECTIONBITMAP。
+- 拉伸功能回归通过（顶边高度 662→742、最小宽钳制 460、状态持久化）；左右拉伸测试在窗口贴屏幕右边缘时会因鼠标出界误报 FAIL，是测试脚本几何限制，非功能问题。安装包重建 4.61 MB（4,833,501 字节）。
+- **GitHub Release 的 v1.0.0 仍是更早的包**；本地 4.61 MB 安装包已含黑角 + 黑底两处修复，尚未上传，外部用户暂时用不到。
+
+### 代码已提交并推送（2026-11-17）
+
+- 拉伸、黑角、黑底三处修复连同 README / HANDOFF 一起提交，commit 信息 `feat(desktop): 边缘拉伸 + 修复透明黑底`；按约定交接文档不写死提交号，避免每次推送即过时。
+- `git push origin dev` 一次成功（这次 github.com git 通道没抽风）；本地与远端 `dev` 的 SHA 用 `git ls-remote` 核对一致，工作区干净。
+
+### Release asset 已替换（2026-11-17）
+
+- 用 `.workbuddy/gh-release-upload.js`（一次性脚本，用完已删）走 GitHub API：先把 `app/build/Hands-off-Dashboard-Setup-1.0.0.exe`（4,832,683 字节）以临时名上传 → 校验服务端 digest 与本地 SHA256 一致 → 删除旧 asset（4,828,145 字节，已下载 3 次）→ PATCH 改回正式名 → tag 端点复查只剩 1 个 asset。
+- **坑**：上传后立刻 PATCH 改名返回 200 但名字没变（新 asset 的传播延迟），隔几秒单独重试 PATCH 才生效；所以别在一次脚本里假设改名即时可见，末尾要再 GET 复查。
+- 匿名 curl 下载公开直链校验：4,832,683 字节，SHA256 `f690f873de10f7849c92cd28c5e18f76d91c73b491403cfef776145ca1462813` 与本地完全一致 → 外部用户拿到的就是含全部修复的新包。
+- 令牌走 `git credential fill`（Windows Git 凭据管理器），命令和脚本都不出现明文 PAT。
+
 ### 技术要点（改动前务必读）
 
 - **桌面层 Z 序**：`SetWindowPos` 的锚点必须是「Z 序紧挨 Progman 之上的那个窗口」（`GetWindow(progman, GW_HWNDPREV)`，同 band）。直接以 Progman 作锚点会被 z-band 规则静默拒绝（返回 TRUE 但不动）；`SetParent` 挂 Progman 会让透明合成失效露灰底。**Win+D 是把 Progman 提到前面**，组件掉到它后面，只能事后纠正：50 ms 巡护一次，在位时一次 `GetWindow` 比较即跳过。
-- **透明**：`ICoreWebView2Controller2` 的 vtable 是 `ICoreWebView2Controller` 的超集，用 `unsafe.Pointer` 强转后调 `PutDefaultBackgroundColor(A:0)`，配合 `WS_EX_LAYERED`。窗口必须保持顶层。
+- **透明（改动前务必读）**：`ICoreWebView2Controller2` 的 vtable 是 Controller 的超集，`unsafe.Pointer` 强转后调 `PutDefaultBackgroundColor(A:0)`。窗口样式必须 `WS_EX_LAYERED|WS_EX_NOREDIRECTIONBITMAP`，且**绝对不能调 `SetLayeredWindowAttributes(...,255,LWA_ALPHA)`**（会把透明压成全黑）。透明区命中测试：`HTTRANSPARENT`→`HTCLIENT`。不能用 GDI 截图验证透明，要用 screen-grab.go 的显示/隐藏对比法。窗口必须保持顶层。
 - **拖动**：用 `screenX/screenY` 位移 + `SetWindowPos(..., SWP_NOSIZE|SWP_NOZORDER)` 只改坐标；`setBounds` 在 150% 缩放下会累积取整漂移。`focusable:false`（`WS_EX_NOACTIVATE`）会让 Chromium 丢 `pointerdown`，拖动/菜单/滑条会同时失灵。
 - **NSIS**：`File /oname=` 不能带引号（所以 exe 名无空格）；路径含中文时 `.nsi` 必须带 UTF-8 BOM；Git Bash 会把 `/INPUTCHARSET` 当路径转换，不可用。`SilentUninstall silent` 让默认卸载也免交互。
 - **诊断工具** `app/tools/probe` 是 DPI 不感知进程，`GetWindowRect` 返回虚拟化坐标（1002×662 @150%），别误判成 DPI bug；以宿主自身日志（1503×993 物理）为准。贴底巡护每 50 ms 会撤销「临时置顶」，截图要 `HS_NO_ATTACH=1`。
@@ -79,7 +112,7 @@ Last-Activity: 2026-11-15
 
 - `app/` — Go 桌面宿主全部源码；`app/installer.nsi` 一键安装脚本
 - `scripts/build.js` — `npm run dist`，编译 → WebView2 引导程序 → NSIS
-- `ui/preload.js` — 桌面态样式注入、右键面板、两个不透明度滑块、拖动
+- `ui/preload.js` — 桌面态样式注入、右键面板、两个不透明度滑块、拖动与边缘拉伸
 - `index.html` — 单文件界面；`config.json` 默认工作目录；`examples/` 示例项目
 - `app/tools/probe`、`app/tools/shot` — z-order 诊断与 GDI 截屏
 - <https://github.com/koopatroopada/hands-off-dashboard>

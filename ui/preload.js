@@ -5,7 +5,8 @@
  * 1. 注入「透明窗口」所需样式（原 index.html 一行不改，全部用覆盖实现）
  * 2. 把两层不透明度写进 CSS 变量并持久化
  * 3. 右键面板：两个滑块 + 刷新 + 工作目录管理（增/删）+ 退出；单击面板外任意位置即关闭
- * 4. 拖动：位移阈值判定 + 主进程 SetWindowPos 只改坐标
+ * 4. 拖动：位移阈值判定 + 宿主 SetWindowPos 只改坐标
+ * 5. 边缘拉伸：8 条感应区给光标方向，宿主接管鼠标捕获后改窗口矩形
  */
 
 // ipcRenderer 由宿主注入：启动时本文件会被包进 /__hs/bridge.js，
@@ -240,6 +241,40 @@ const OVERRIDE_CSS = `
     border-color: rgba(220, 80, 80, 0.42);
     color: #ffd9d4;
   }
+
+  /* ── 边缘拉伸感应区（8px 边 / 16px 角）── */
+  #hs-resize-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 2147482000;
+    pointer-events: none;
+  }
+
+  #hs-resize-layer .hs-edge {
+    position: absolute;
+    background: transparent;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+  }
+
+  /* 四角比圆角半径略留余量，保证窗口圆角裁剪后仍能按住拉伸 */
+  .hs-edge[data-edge="left"]         { left: 0;  top: 22px; bottom: 22px; width: 8px;  cursor: ew-resize; }
+  .hs-edge[data-edge="right"]        { right: 0; top: 22px; bottom: 22px; width: 8px;  cursor: ew-resize; }
+  .hs-edge[data-edge="top"]          { top: 0;   left: 22px; right: 22px; height: 8px; cursor: ns-resize; }
+  .hs-edge[data-edge="bottom"]       { bottom: 0; left: 22px; right: 22px; height: 8px; cursor: ns-resize; }
+  .hs-edge[data-edge="top-left"]     { top: 0;    left: 0;  width: 22px; height: 22px; cursor: nwse-resize; }
+  .hs-edge[data-edge="top-right"]    { top: 0;    right: 0; width: 22px; height: 22px; cursor: nesw-resize; }
+  .hs-edge[data-edge="bottom-left"]  { bottom: 0; left: 0;  width: 22px; height: 22px; cursor: nesw-resize; }
+  .hs-edge[data-edge="bottom-right"] { bottom: 0; right: 0; width: 22px; height: 22px; cursor: nwse-resize; }
+
+  /* 抽屉打开时让开右侧滚动条，别把内容区的拖拽吞掉 */
+  body:has(.drawer.is-open) #hs-resize-layer { display: none; }
+
+  /* 拉伸中锁住光标：鼠标会移出感应区甚至移出窗口，不能变回箭头 */
+  html.hs-resizing, html.hs-resizing * {
+    cursor: var(--hs-resize-cursor, ew-resize) !important;
+  }
 `;
 
 function injectOverrideStyle() {
@@ -350,7 +385,7 @@ function buildPanel() {
     <div class="hs-roots"></div>
     <button type="button" class="hs-btn" data-act="add-root">添加目录…</button>
     <div class="hs-divider"></div>
-    <div class="hs-hint">按住卡片或空白处可拖动窗口<br />单击空白 / 右键再次点击可关闭本菜单<br />Ctrl+Alt+H 隐藏 · Ctrl+Alt+Q 退出</div>
+    <div class="hs-hint">按住卡片或空白处可拖动窗口<br />拖动四边 / 四角可调整大小<br />单击空白 / 右键再次点击可关闭本菜单<br />Ctrl+Alt+H 隐藏 · Ctrl+Alt+Q 退出</div>
     <button type="button" class="hs-quit">退出组件</button>
   `;
 
@@ -434,6 +469,55 @@ function closePanel() {
   panelOpen = false;
 }
 
+/* ── 边缘拉伸 ─────────────────────────────────────────────── */
+
+// 名称要和宿主 resizeEdges 里的键一一对应；第二项是拉伸期间锁定的光标。
+const RESIZE_EDGES = [
+  ['left', 'ew-resize'],
+  ['right', 'ew-resize'],
+  ['top', 'ns-resize'],
+  ['bottom', 'ns-resize'],
+  ['top-left', 'nwse-resize'],
+  ['top-right', 'nesw-resize'],
+  ['bottom-left', 'nesw-resize'],
+  ['bottom-right', 'nwse-resize']
+];
+
+function buildResizeHandles() {
+  if (document.getElementById('hs-resize-layer')) return;
+  if (!document.body) {
+    document.addEventListener('DOMContentLoaded', buildResizeHandles, { once: true });
+    return;
+  }
+  const layer = document.createElement('div');
+  layer.id = 'hs-resize-layer';
+  for (const [edge] of RESIZE_EDGES) {
+    const handle = document.createElement('div');
+    handle.className = 'hs-edge';
+    handle.dataset.edge = edge;
+    layer.appendChild(handle);
+  }
+  document.body.appendChild(layer);
+}
+
+/** 按下感应区：只把方向交给宿主，之后的鼠标跟踪由 Win32 捕获负责 */
+function startResize(edge) {
+  const found = RESIZE_EDGES.find(([name]) => name === edge);
+  const root = document.documentElement;
+  root.style.setProperty('--hs-resize-cursor', found ? found[1] : 'ew-resize');
+  root.classList.add('hs-resizing');
+  ipcRenderer.send('desktop:resize-start', { edge });
+}
+
+/** 收尾解锁光标。宿主捕获了鼠标时网页收不到 pointerup，所以要监听宿主派发的事件 */
+function endResize() {
+  const root = document.documentElement;
+  if (!root.classList.contains('hs-resizing')) return;
+  root.classList.remove('hs-resizing');
+  root.style.removeProperty('--hs-resize-cursor');
+  ipcRenderer.send('desktop:resize-end');
+}
+
 /* ── 拖动窗口 ─────────────────────────────────────────────── */
 
 // 需要独占鼠标手势的控件：滑条之类不能一边拖控件一边拖窗口。
@@ -461,6 +545,16 @@ function bindInteractions() {
   document.addEventListener(
     'pointerdown',
     (event) => {
+      // 感应区优先：边缘按下只能拉伸，不能同时进入拖动手势
+      const handle = event.target.closest('.hs-edge');
+      if (handle) {
+        if (panelOpen) closePanel();
+        if (event.button !== 0) return;
+        event.preventDefault();
+        startResize(handle.dataset.edge);
+        return;
+      }
+
       const inPanel = event.target.closest(`#${PANEL_ID}`);
       if (inPanel) {
         if (event.target.matches('input[type="range"]')) sliderActive = true;
@@ -519,6 +613,7 @@ function bindInteractions() {
 
   const release = () => {
     sliderActive = false;
+    endResize();
     endDrag();
   };
   document.addEventListener('pointerup', release, true);
@@ -552,12 +647,16 @@ function bindInteractions() {
   });
 
   window.addEventListener('resize', closePanel);
+
+  // 宿主接管鼠标捕获后网页收不到 pointerup，由宿主主动派发这个事件收尾
+  window.addEventListener('hs-resize-end', endResize);
 }
 
 /* ── 初始化 ───────────────────────────────────────────────── */
 
 async function init() {
   injectOverrideStyle();
+  buildResizeHandles();
 
   try {
     const saved = await ipcRenderer.invoke('desktop:bootstrap');
