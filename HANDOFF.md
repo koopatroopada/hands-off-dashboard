@@ -148,11 +148,15 @@ Last-Activity: 2026-11-27
 
 ## Next steps
 
-1. **发布 v1.1.1**：推 `dev` / `main`，`npm run release` 建 v1.1.1 Release 并上传 asset。
-2. **找第一位外部用户试用**：把 v1.1.1 的 Release 链接发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
-3. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
-4. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
-5. 收尾小事：`ui` / `workbuddy/main-622ca596` 两条旧分支可以删；本地 `dist/`、`demo/` 是历史残留，被 .gitignore 挡着；`index.v1.0.0.html.bak` 确认新版稳定后可以删。
+1. **找第一位外部用户试用**：把 v1.1.1 的 Release 链接发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
+2. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
+3. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
+
+## 已完成的收尾
+
+- v1.1.1 已推 `dev` / `main`（都在 `c9d0278`），`npm run release` 建了 Release 并上传 asset，匿名下载 digest 校验一致。
+- 远端 `ui` / `workbuddy/main-622ca596` 两条旧分支本来就不存在（DELETE 返回 422，分支列表只有 `dev` / `main`），无需再处理。
+- 本地 `index.v1.0.0.html.bak` 与 `D:\1Projects\acl-recovery` 已删；旧版 index.html 在提交 `615478a8` 里可按字节找回。
 
 ## Relevant artifacts
 
