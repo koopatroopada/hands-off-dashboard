@@ -108,9 +108,11 @@ Last-Activity: 2026-11-27
 
 ### v1.1.0 发布（2026-11-27）
 
-- 工作区这份目录**不是 git 仓库**（只有 .gitignore，没有 .git），源码改动是先提交到 `D:\1Projects\hands-off-dashboard-repo` 那个克隆里再推的。以后改代码请直接在克隆里改，或者把 `.git` 挪进工作区，别再对着工作区做 git 操作。
-- 提交两次：`b2500b5` 新 UI + 版本号 + README + 预览图；`f1e5b5e` 构建脚本与 .gitignore。先推 `dev`（`19d199a..f1e5b5e`），再 `--no-ff` 合到 `main` 得到 `af4bb6e` 后推送，两个分支现在都指向同一条历史。
+- 工作区这份目录原本**不是 git 仓库**（只有 .gitignore，没有 .git），源码改动是先提交到 `D:\1Projects\hands-off-dashboard-repo` 那个克隆里再推的。**2026-11-27 已把 `.git` 挪回工作区**，克隆目录确认无独有文件后删除；现在 `D:\1Projects\hands-off-dashboard` 本身就是仓库（`dev` 跟踪 `origin/dev`），可以直接在这里 `git status / commit / push`。
+- 挪 `.git` 后 `git status` 一度把 22 个文件全标成已修改，但 `git diff` 是空的、`hash-object` 与索引完全一致——原因是索引里存的是 stat 缓存，换目录后 inode/mtime 变了，`update-index --refresh` 报 `needs update` 也不管用。执行一次 `git add -A` 重写 stat 缓存后恢复干净（暂存区仍为空，没有实际改动）。顺便把本仓库的 `core.autocrlf` 设成 `false`，避免工作区 LF 被反复转成 CRLF。
+- 提交两次：`b2500b5` 新 UI + 版本号 + README + 预览图；`f1e5b5e` 构建脚本与 .gitignore。先推 `dev`（`19d199a..f1e5b5e`），再 `--no-ff` 合到 `main` 得到 `af4bb6e` 后推送；之后又有 `bd29bc0`（交接文档）和 `2760be1`（补 MIT LICENSE），两个分支现在都停在 `2760be1`。
 - Release v1.1.0 由 REST API 直接创建（`gh` CLI 未登录，但 `git credential fill` 里有 `koopatroopada` 的 PAT，scopes 含 `repo`/`workflow`/`write:packages`）。asset 上传走 `uploads.github.com`，返回的 `digest` 与本地 SHA256 一致；tag v1.1.0 由 GitHub 自动建在 main 的 `af4bb6e` 上。
+- `2760be1` 那次 `git push origin main` 连续被拒（`Connection was reset` / `Couldn't connect to server`），改用 REST `PATCH /git/refs/heads/main` 快进到该 commit，再用 `/branches` 复查两个 head 确认成功。因此远端 main 的提交是 API 推的，不是 git 通道。
 - 匿名下载直链校验：4,765,051 字节，SHA256 `e6fa0cb619b29d8ca278441463316c09b98b2f0f17c1f6a0addd8b8276a86d5e`，与本地完全一致。README 里的 v1.1.0 直链现在可用。
 - 坑：`api.github.com` 用 PowerShell 的 `Invoke-RestMethod` 会返回 403（拿不到 UA/凭据），换成 `D:\2Enviroment\Git\mingw64\bin\curl.exe` 加 `User-Agent` 头就正常。
 
@@ -131,8 +133,7 @@ Last-Activity: 2026-11-27
 1. **找第一位外部用户试用**：把 <https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.1.0/Hands-off-Dashboard-Setup-1.1.0.exe> 发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
 2. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
 3. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
-4. **把 `.git` 放回工作区**：现在源码改动要先在 `D:\1Projects\hands-off-dashboard-repo` 提交推送，工作区目录本身没有版本控制，容易两处漂移。
-5. 收尾小事：`ui` / `workbuddy/main-622ca596` 两条旧分支可以删；本地 `dist/`、`demo/` 是历史残留，被 .gitignore 挡着；`index.v1.0.0.html.bak` 确认新版稳定后可以删。
+4. 收尾小事：`ui` / `workbuddy/main-622ca596` 两条旧分支可以删；本地 `dist/`、`demo/` 是历史残留，被 .gitignore 挡着；`index.v1.0.0.html.bak` 确认新版稳定后可以删。
 
 ## Relevant artifacts
 
