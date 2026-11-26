@@ -18,7 +18,7 @@
 
 适用于 Windows 10 / 11。
 
-**[下载安装包 `Hands-off-Dashboard-Setup-1.1.1.exe`（4.5 MB）](https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.1.1/Hands-off-Dashboard-Setup-1.1.1.exe)**
+**[下载安装包 `Hands-off-Dashboard-Setup-1.1.2.exe`（4.5 MB）](https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.1.2/Hands-off-Dashboard-Setup-1.1.2.exe)**
 
 双击即可。**没有安装向导、不需要管理员权限**：自动装到当前用户目录，装完立刻启动，看板直接出现在桌面上。同时会生成桌面快捷方式、开始菜单入口、开机自启和卸载项。
 

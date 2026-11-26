@@ -1836,6 +1836,16 @@
       }[character]));
     }
 
+    // DOM id / aria-labelledby / aria-controls 专用的 safe id。
+    // aria-labelledby 是按空白拆分的 IDREF 列表，项目 id 里若含空格
+    // （例如去重后的 "rootA/同名项目 #2"）会被拆成多个引用而全部失效。
+    // 只替换空白（IDREF 的唯一硬约束），保留中文等字符，避免纯中文项目名
+    // 全部塌缩成同一个 id。data-pin-id / data-doc-id 保留原始 id，
+    // 它们走 dataset 比较，不受影响。
+    function domId(value) {
+      return 'd-' + String(value).replace(/\s+/g, '-');
+    }
+
     function dateValue(value) {
       if (!value) return null;
       const timestamp = Date.parse(`${value}T00:00:00`);
@@ -2056,8 +2066,8 @@
 
       const isPinned = state.pinned.has(project.id);
       const pinLabel = isPinned ? `Unpin ${project.name}` : `Pin ${project.name}`;
-      const titleId = `project-title-${project.id}`;
-      const whyId = `why-${project.id}`;
+      const titleId = `project-title-${domId(project.id)}`;
+      const whyId = `why-${domId(project.id)}`;
       const titleMarkup = `
         <span class="title-track">
           <span class="title-text">${escapeHtml(project.name)}</span>

@@ -2,11 +2,11 @@ Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件）�
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
 Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
 Current: 日常常驻
-Evidence: v1.1.1 修复同名项目 ID 冲突并已本地打包、静默安装验证：新安装包 4,765,724 字节，SHA256 822d42b3…6e23f，注册表 DisplayVersion=1.1.1，日志显示 1.1.1 启动；v1.1.0 的 GitHub Release 与匿名下载校验记录见下文历史章节
+Evidence: v1.1.2 修复去重 ID 破坏 aria IDREF 的问题（含空格的 id 会让 aria-labelledby / aria-controls 失效，Why 展开按钮失效），已发布到 GitHub Release 并通过匿名下载校验；v1.1.1 的同名项目 ID 冲突修复记录见下文历史章节
 Gate: 连续一周开机自启都正常显示卡片，且至少一位外部用户不看 README 也能独立装好
-Blocker: 还没有外部用户实际安装过；v1.1.1 尚未发布到 GitHub Release
+Blocker: 还没有外部用户实际安装过
 Next-Determined: DETERMINED
-Next: 把 v1.1.1 推到 main/dev 并用 npm run release 发布，然后把 Release 链接交给第一位外部用户试用
+Next: 把 v1.1.2 的 Release 链接交给第一位外部用户试用（不看 README 只给链接，确认能独立装好）
 Created: 2026-11-03
 Last-Activity: 2026-11-27
 
@@ -96,6 +96,13 @@ Last-Activity: 2026-11-27
 - Go 的 `time.Format` 截断毫秒，JS `toISOString()` 四舍五入，`app/data.go` 的 `isoTime()` 手动补了这半毫秒。
 - 从 Bash 用 `&` 启动的 exe 会随父 shell 退出被连带杀掉，看起来像「应用自己退出」；用后台任务方式启动才稳定。`taskkill` 在 Git Bash 里要加 `MSYS_NO_PATHCONV=1`，否则 `/F` 会被转成 `F:/`。
 
+### v1.1.2：去重 ID 破坏 aria IDREF（2026-11-27）
+
+- 起因：v1.1.1 的去重 ID 形如 `rootA/同名项目 #2`，含空格。WAI-ARIA 的 `aria-labelledby` / `aria-controls` 是**按空白拆分的 IDREF 列表**，实测 `aria-labelledby="project-title-rootA/同名项目 #2"` 被拆成两个都解析不到的引用，卡片可访问名称丢失；`index.html` 里 Why 展开按钮用 `getElementById(aria-controls)`，ID 含空格时直接返回 null，展开功能对重名项目失效。
+- 修复：`index.html` 增加 `domId()`，只替换空白字符（`\s+` → `-`）并加 `d-` 前缀，专用于 DOM id / `aria-labelledby` / `aria-controls`。`data-pin-id` 与 `data-doc-id` 保留原始 ID，它们走 `dataset` 比较，置顶记录不受影响。特意**不替换中文**，否则纯中文项目名会全部塌缩成 `d-`。
+- 验证：无头 Edge DOM 探针覆盖 3 个重名 + 1 个唯一项目，四个卡片的 `aria-labelledby` 单引用全部解析成功、`aria-controls` 全部解析成功、`data-pin-id` 保持原始值，4/4 PASS；`domId` 对中文、斜杠、`#`、空格的输出互不冲突。
+- 版本号四处同步：`package.json`、`app/state.go`、`app/installer.nsi`（`APP_VERSION` + `VIProductVersion`）、README 下载链接。
+
 ### v1.1.1：同名项目 ID 冲突修复（2026-11-27）
 
 - 起因：代码走查发现 `discover()` 用子目录名当项目 ID；多个工作目录里存在同名项目时 ID 相同，`/api/handoff?id=` 会串文档、置顶状态也会一起亮。单跳到 HANDOFF 的只读看板里属于潜在数据错认，优先级高。
@@ -148,13 +155,13 @@ Last-Activity: 2026-11-27
 
 ## Next steps
 
-1. **找第一位外部用户试用**：把 v1.1.1 的 Release 链接发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
+1. **找第一位外部用户试用**：把 v1.1.2 的 Release 链接发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
 2. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
 3. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
 
 ## 已完成的收尾
 
-- v1.1.1 已推 `dev` / `main`（都在 `c9d0278`），`npm run release` 建了 Release 并上传 asset，匿名下载 digest 校验一致。
+- v1.1.1 / v1.1.2 均已推 `dev` / `main`，`npm run release` 建了 Release 并上传 asset，匿名下载 digest 校验一致。
 - 远端 `ui` / `workbuddy/main-622ca596` 两条旧分支本来就不存在（DELETE 返回 422，分支列表只有 `dev` / `main`），无需再处理。
 - 本地 `index.v1.0.0.html.bak` 与 `D:\1Projects\acl-recovery` 已删；旧版 index.html 在提交 `615478a8` 里可按字节找回。
 

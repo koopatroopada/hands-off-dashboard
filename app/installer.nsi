@@ -7,7 +7,7 @@ SetCompressor /SOLID lzma
 
 !define APP_NAME       "Hands-off Dashboard"
 !define APP_EXE        "Hands-off-Dashboard.exe"
-!define APP_VERSION    "1.1.1"
+!define APP_VERSION    "1.1.2"
 !define APP_PUBLISHER  "Hands-off Dashboard"
 !define UNINST_KEY     "Software\Microsoft\Windows\CurrentVersion\Uninstall\HandsOffDashboard"
 !define WV2_CLIENT_ID  "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
@@ -25,7 +25,7 @@ SilentUninstall silent
 ShowInstDetails hide
 ShowUninstDetails hide
 
-VIProductVersion "1.1.1.0"
+VIProductVersion "1.1.2.0"
 VIAddVersionKey "ProductName"     "${APP_NAME}"
 VIAddVersionKey "ProductVersion"  "${APP_VERSION}"
 VIAddVersionKey "FileVersion"     "${APP_VERSION}"
