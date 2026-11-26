@@ -16,10 +16,14 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const APP = path.join(ROOT, 'app');
 const BUILD = path.join(APP, 'build');
+const TOOLCHAIN = path.join(ROOT, '.toolchain');
 const VERSION = require(path.join(ROOT, 'package.json')).version;
 
-const GO_BIN = process.env.GO_BIN || 'D:/2Enviroment/Go/bin/go.exe';
-const GOPATH = process.env.GOPATH_DIR || 'D:/2Enviroment/Go/gopath';
+// 本机没装 Go / NSIS 时用仓库里下载好的 .toolchain（被 .gitignore 忽略）。
+const LOCAL_GO = path.join(TOOLCHAIN, 'goroot', 'go', 'bin', 'go.exe');
+const GO_BIN = process.env.GO_BIN || (fs.existsSync(LOCAL_GO) ? LOCAL_GO : 'D:/2Enviroment/Go/bin/go.exe');
+const GOPATH =
+  process.env.GOPATH_DIR || (fs.existsSync(TOOLCHAIN) ? path.join(TOOLCHAIN, 'gopath') : 'D:/2Enviroment/Go/gopath');
 const WV2_URL = 'https://go.microsoft.com/fwlink/p/?LinkId=2124703';
 const WV2_FILE = path.join(BUILD, 'MicrosoftEdgeWebview2Setup.exe');
 const HOST_EXE = path.join(APP, 'hs-dashboard.exe');
@@ -36,6 +40,7 @@ function run(cmd, args, opts = {}) {
 function findNSIS() {
   if (process.env.NSIS_MAKENSIS) return process.env.NSIS_MAKENSIS;
   const candidates = [
+    path.join(TOOLCHAIN, 'nsis', 'makensis.exe'),
     'C:/Program Files (x86)/NSIS/makensis.exe',
     path.join(os.homedir(), 'AppData/Local/Programs/NSIS/makensis.exe'),
     // 本机若装过 electron-builder，复用它下载的 NSIS 3.x。
@@ -46,17 +51,21 @@ function findNSIS() {
 
 function buildGo() {
   step('编译桌面宿主（Go）');
-  run(GO_BIN, ['build', '-ldflags', '-s -w -H windowsgui', '-o', 'hs-dashboard.exe', '.'], {
-    cwd: APP,
-    env: {
-      ...process.env,
-      GOPATH,
-      GOMODCACHE: path.join(GOPATH, 'pkg/mod'),
-      GOPROXY: process.env.GOPROXY || 'https://goproxy.cn,direct',
-      CGO_ENABLED: '0',
-      PATH: `${path.dirname(GO_BIN)}${path.delimiter}${process.env.PATH}`,
-    },
-  });
+  const env = {
+    ...process.env,
+    GOPATH,
+    GOMODCACHE: path.join(GOPATH, 'pkg/mod'),
+    GOPROXY: process.env.GOPROXY || 'https://goproxy.cn,direct',
+    CGO_ENABLED: '0',
+    PATH: `${path.dirname(GO_BIN)}${path.delimiter}${process.env.PATH}`,
+  };
+  // Go 默认在 %TEMP% 下建 work dir，某些受限环境会拒绝；指向 .toolchain 即可。
+  if (fs.existsSync(TOOLCHAIN)) {
+    env.GOCACHE = process.env.GOCACHE || path.join(TOOLCHAIN, 'gocache');
+    env.GOTMPDIR = process.env.GOTMPDIR || path.join(TOOLCHAIN, 'gotmp');
+    fs.mkdirSync(env.GOTMPDIR, { recursive: true });
+  }
+  run(GO_BIN, ['build', '-ldflags', '-s -w -H windowsgui', '-o', 'hs-dashboard.exe', '.'], { cwd: APP, env });
   console.log(`  → ${HOST_EXE} (${(fs.statSync(HOST_EXE).size / 1048576).toFixed(1)} MB)`);
 }
 
@@ -76,7 +85,48 @@ async function fetchWebView2() {
 function buildInstaller() {
   step('打包一键安装包（NSIS）');
   fs.mkdirSync(BUILD, { recursive: true });
-  run(findNSIS(), ['installer.nsi'], { cwd: APP });
+  const nsis = findNSIS();
+
+  // 先在正常路径试一次，失败再走临时目录兜底；首次尝试的日志先攒着，
+  // 免得兜底成功时终端里还留着一段 "Can't open output file" 的假报错。
+  try {
+    run(nsis, ['installer.nsi'], { cwd: APP, stdio: 'pipe' });
+    return;
+  } catch (error) {
+    const firstAttempt = `${error.stdout || ''}${error.stderr || ''}`.trim();
+    // 少数环境里 makensis 无法把 OutFile 直接写进 app\build（报 Can't open output file），
+    // 退一步：改写到项目根的临时目录打包，再把成品拷回 build。
+    const staging = path.join(ROOT, '.nsis-out');
+    fs.mkdirSync(staging, { recursive: true });
+    const script = fs.readFileSync(path.join(APP, 'installer.nsi'), 'utf8');
+    const patched = script.replace(
+      /^OutFile\s+"[^"]*"/m,
+      `OutFile "${path.join(staging, path.basename(OUT)).replace(/\\/g, '\\\\')}"`
+    );
+    if (patched === script) {
+      console.error(firstAttempt);
+      throw error;
+    }
+    const tempNsi = path.join(APP, '.installer-build.nsi');
+    // installer.nsi 必须带 UTF-8 BOM，临时副本也一样。
+    fs.writeFileSync(tempNsi, '\ufeff' + patched.replace(/^\ufeff/, ''), 'utf8');
+    try {
+      run(nsis, [path.basename(tempNsi)], { cwd: APP });
+    } catch (fallbackError) {
+      console.error(firstAttempt);
+      throw fallbackError;
+    } finally {
+      fs.rmSync(tempNsi, { force: true });
+    }
+    const staged = path.join(staging, path.basename(OUT));
+    if (!fs.existsSync(staged)) {
+      console.error(firstAttempt);
+      throw error;
+    }
+    fs.copyFileSync(staged, OUT);
+    fs.rmSync(staging, { recursive: true, force: true });
+    console.log('  （app\\build 无法直接写出，已改为先输出到临时目录再拷回）');
+  }
 }
 
 (async () => {

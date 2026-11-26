@@ -34,6 +34,9 @@ app/.testdata/
 app/.statedir
 image.png
 
+# ---- 本机构建工具链（Go + NSIS，约 516 MB，不进仓库）----
+.toolchain/
+
 # ---- 日志与临时文件 ----
 *.log
 *.tmp
