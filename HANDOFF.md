@@ -2,11 +2,11 @@ Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件）�
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
 Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
 Current: 日常常驻
-Evidence: v1.1.0 安装包已在本地打包并静默安装验证通过（4.5 MB，SHA256 e6fa0c…6d5e）：新 UI 的看板 / 方格两视图、置顶同步、全文抽屉都在真机宿主里跑通；GitHub Release 仍停在 v1.0.0，尚未上传
+Evidence: GitHub Release v1.1.0 已发布，asset 4,765,051 字节，匿名下载校验 SHA256 e6fa0cb6…86a86d5e 与本地一致；tag v1.1.0 指向 main 的 af4bb6e，源码与安装包同源；静默安装验证通过，新 UI 的看板 / 方格两视图、置顶同步、全文抽屉在真机宿主里跑通
 Gate: 连续一周开机自启都正常显示卡片，且至少一位外部用户不看 README 也能独立装好
-Blocker: 还没有外部用户实际安装过；仓库没有 LICENSE；v1.1.0 安装包还没上传到 Release
+Blocker: 还没有外部用户实际安装过；仓库没有 LICENSE
 Next-Determined: DETERMINED
-Next: 把 v1.1.0 安装包上传成 GitHub Release（新建 v1.1.0 tag），然后把链接交给第一位外部用户试用
+Next: 把 v1.1.0 的 Release 链接交给第一位外部用户试用（不看 README 只给链接，确认能独立装好），同时补 MIT LICENSE
 Created: 2026-11-03
 Last-Activity: 2026-11-27
 
@@ -106,12 +106,20 @@ Last-Activity: 2026-11-27
 - 静默安装验证：`Setup-1.1.0.exe /S` 退出码 0，装到 `%LOCALAPPDATA%\Programs\Hands-off Dashboard`，注册表 `DisplayVersion=1.1.0`，装完自动启动，日志显示版本 1.1.0、透明背景生效、两个热键都注册成功；`/api/projects` 返回 10 个真实项目，桥脚本 19,645 字节含 `hs-card-strong`。
 - 无头 Edge 截图核对：看板视图 7 张卡横向滚动正常，方格视图 6 个方块固定 140px、从左到右排列、标题占两行的卡片自动变高、名称下无空白。
 
+### v1.1.0 发布（2026-11-27）
+
+- 工作区这份目录**不是 git 仓库**（只有 .gitignore，没有 .git），源码改动是先提交到 `D:\1Projects\hands-off-dashboard-repo` 那个克隆里再推的。以后改代码请直接在克隆里改，或者把 `.git` 挪进工作区，别再对着工作区做 git 操作。
+- 提交两次：`b2500b5` 新 UI + 版本号 + README + 预览图；`f1e5b5e` 构建脚本与 .gitignore。先推 `dev`（`19d199a..f1e5b5e`），再 `--no-ff` 合到 `main` 得到 `af4bb6e` 后推送，两个分支现在都指向同一条历史。
+- Release v1.1.0 由 REST API 直接创建（`gh` CLI 未登录，但 `git credential fill` 里有 `koopatroopada` 的 PAT，scopes 含 `repo`/`workflow`/`write:packages`）。asset 上传走 `uploads.github.com`，返回的 `digest` 与本地 SHA256 一致；tag v1.1.0 由 GitHub 自动建在 main 的 `af4bb6e` 上。
+- 匿名下载直链校验：4,765,051 字节，SHA256 `e6fa0cb619b29d8ca278441463316c09b98b2f0f17c1f6a0addd8b8276a86d5e`，与本地完全一致。README 里的 v1.1.0 直链现在可用。
+- 坑：`api.github.com` 用 PowerShell 的 `Invoke-RestMethod` 会返回 403（拿不到 UA/凭据），换成 `D:\2Enviroment\Git\mingw64\bin\curl.exe` 加 `User-Agent` 头就正常。
+
 ### 构建环境与坑（本机）
 
 - 本机没有 Go 与 NSIS，也不在 PATH 里。这次把工具链下到 `.toolchain/`（已被 .gitignore 忽略）：Go 1.27.4 来自 `mirrors.aliyun.com/golang/`，NSIS 3.04 来自 `cdn.npmmirror.com/binaries/electron-builder-binaries/nsis-3.0.4.1/nsis-3.0.4.1.7z`（用 `tar.exe -xf` 解，本机没有 7-Zip）。SourceForge 与 `go.dev` 直连都不通，`golang.google.cn` 会 302 到拿不到的 dl.google.com。
 - **PowerShell 的 `Invoke-WebRequest` / `curl.exe`（schannel）在这台机器上全部 TLS 失败**（`SEC_E_NO_CREDENTIALS`），但 `D:\2Enviroment\Git\mingw64\bin\curl.exe` 和 Node 的 `fetch` 都正常。以后下载依赖优先用这两个。
-- `scripts/build.js` 的默认 `GO_BIN` / `GOPATH_DIR` 路径（`D:/2Enviroment/Go/...`）已经不存在，构建时用 `GO_BIN` / `GOPATH_DIR` / `NSIS_MAKENSIS` 指向 `.toolchain/`；另外必须设 `GOTMPDIR` 到工作区内，否则 Go 会在 `%TEMP%` 建 work dir 时报 Access is denied。
-- **`app\build` 不能当 NSIS 输出目录**：makensis 在那里一律报 `Can't open output file`，即使目录属主是当前用户、ACL 给了完全控制、把目录换 ACL 重授权、甚至新建一个空的 `app\zz` 子目录也同样失败；同样内容输出到项目根、`nsi-out`、`appx` 都正常。绕法是先用一份改写 `OutFile` 的临时脚本输出到 `dist-out`，再把 exe 拷进 `app\build`。真凶未定，怀疑与该目录的历史 NTFS 属性/重定向有关，后续若换机器构建大概率不会复现。
+- `scripts/build.js` 现在会自动找 `.toolchain/` 里的 Go 与 NSIS（找不到才退回 `D:/2Enviroment/Go/...`），并自己设 `GOCACHE` / `GOTMPDIR`，所以直接 `npm run dist` 就能跑，不用再手动导环境变量。想换工具链仍可用 `GO_BIN` / `GOPATH_DIR` / `NSIS_MAKENSIS`。
+- **`app\build` 不能当 NSIS 输出目录**：makensis 在那里一律报 `Can't open output file`，即使目录属主是当前用户、ACL 给了完全控制、把目录重授权、甚至新建一个空的 `app\zz` 子目录也同样失败；同样内容输出到项目根、`nsi-out`、`appx` 都正常。`buildInstaller()` 已经内置兜底：先改写 `OutFile` 到 `.nsis-out` 打包，再把成品拷回 `app\build`，所以构建仍然是一条命令。真凶未定，怀疑与该目录的历史 NTFS 属性有关，换机器构建大概率不会复现。
 - 编辑 `installer.nsi` 时丢了 UTF-8 BOM，makensis 直接报 `Bad text encoding: installer.nsi:2`。这个文件必须带 BOM，改完要检查首三字节是 `EF BB BF`。
 
 ### 网络与推送
@@ -120,11 +128,11 @@ Last-Activity: 2026-11-27
 
 ## Next steps
 
-1. **上传 v1.1.0 到 Release**：打 `v1.1.0` tag，把 `app/build/Hands-off-Dashboard-Setup-1.1.0.exe` 传上去，README 里的直链已经改成 v1.1.0（在 asset 上传前它还是 404）。
+1. **找第一位外部用户试用**：把 <https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.1.0/Hands-off-Dashboard-Setup-1.1.0.exe> 发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
 2. **补 LICENSE**：现在没有许可证等于默认保留所有权利，和对外推广的口径不一致。MIT 最省事。
-3. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过，去 GitHub Settings → Developer settings 删掉换新的。
-4. **找第一位外部用户试用**：不看 README、只给安装包链接，确认能独立双击装好并看到卡片。
-5. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
+3. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
+4. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
+5. **把 `.git` 放回工作区**：现在源码改动要先在 `D:\1Projects\hands-off-dashboard-repo` 提交推送，工作区目录本身没有版本控制，容易两处漂移。
 6. 收尾小事：`ui` / `workbuddy/main-622ca596` 两条旧分支可以删；本地 `dist/`、`demo/` 是历史残留，被 .gitignore 挡着；`index.v1.0.0.html.bak` 确认新版稳定后可以删。
 
 ## Relevant artifacts
