@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-const appVersion = "1.1.0"
+const appVersion = "1.1.1"
 
 // Config 对应 config.json + loadConfig() 的解析结果。
 type Config struct {

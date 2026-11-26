@@ -5,6 +5,7 @@ package main
 // 输出结构即 index.html 直接使用的数据契约。
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -198,6 +199,56 @@ func isWorktree(dir string) bool {
 
 func compareName(a, b string) int { return zhCollator.CompareString(a, b) }
 
+// dedupeIDs 保证 id 全局唯一。多个工作目录下存在同名项目时，
+// 原来的 ID 都是目录名，会让 /api/handoff?id= 和置顶状态认错项目
+// （置顶一个，另一个也跟着亮）。
+//
+// 规则：没有重名时保持 ID == 名称，避免既有置顶记录失效；
+// 重名的一组改成「根目录名/名称」，仍然冲突的按排序后的位置补 #2、#3。
+func dedupeIDs(specs []spec) []spec {
+	if len(specs) < 2 {
+		return specs
+	}
+	count := map[string]int{}
+	for _, s := range specs {
+		count[s.ID]++
+	}
+
+	used := map[string]bool{}
+	groups := map[string][]int{}
+	for i, s := range specs {
+		if count[s.ID] == 1 {
+			used[s.ID] = true
+			continue
+		}
+		groups[s.ID] = append(groups[s.ID], i)
+	}
+
+	// 同一组内按完整路径排序，保证结果不受目录遍历顺序影响。
+	for _, idx := range groups {
+		sort.SliceStable(idx, func(a, b int) bool {
+			return strings.ToLower(toPosix(specs[idx[a]].Dir)) < strings.ToLower(toPosix(specs[idx[b]].Dir))
+		})
+	}
+
+	for _, idx := range groups {
+		for _, i := range idx {
+			s := specs[i]
+			rootName := filepath.Base(s.Root)
+			if rootName == "" || rootName == "." || rootName == string(filepath.Separator) {
+				rootName = "root"
+			}
+			candidate := rootName + "/" + s.Name
+			for n := 2; used[candidate]; n++ {
+				candidate = fmt.Sprintf("%s/%s #%d", rootName, s.Name, n)
+			}
+			used[candidate] = true
+			specs[i].ID = candidate
+		}
+	}
+	return specs
+}
+
 // discover：每个子文件夹默认是一个项目，但只有根目录含 HANDOFF.md 的才展示。
 func discover(root string, ignore []string) ([]spec, error) {
 	skipped := map[string]bool{}
@@ -266,7 +317,8 @@ func resolveSpecs(cfg *Config) ([]spec, error) {
 			}
 			specs = append(specs, spec{ID: id, Name: name, Dir: dir, Root: base, HandoffPath: filepath.Join(dir, handoffName)})
 		}
-		return specs, nil
+		// 显式清单里也可能撞 id，同样去重。
+		return dedupeIDs(specs), nil
 	}
 
 	specs := []spec{}
@@ -286,7 +338,7 @@ func resolveSpecs(cfg *Config) ([]spec, error) {
 		}
 	}
 	sort.SliceStable(specs, func(i, j int) bool { return compareName(specs[i].Name, specs[j].Name) < 0 })
-	return specs, nil
+	return dedupeIDs(specs), nil
 }
 
 func errorPtr(s string) *string { return &s }

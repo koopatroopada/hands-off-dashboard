@@ -2,11 +2,11 @@ Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件）�
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
 Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
 Current: 日常常驻
-Evidence: GitHub Release v1.1.0 已发布，asset 4,765,051 字节，匿名下载校验 SHA256 e6fa0cb6…86a86d5e 与本地一致；tag v1.1.0 指向含全部改动的 main，源码与安装包同源；静默安装验证通过，新 UI 的看板 / 方格两视图、置顶同步、全文抽屉在真机宿主里跑通；仓库已补 MIT LICENSE
+Evidence: v1.1.1 修复同名项目 ID 冲突并已本地打包、静默安装验证：新安装包 4,765,724 字节，SHA256 822d42b3…6e23f，注册表 DisplayVersion=1.1.1，日志显示 1.1.1 启动；v1.1.0 的 GitHub Release 与匿名下载校验记录见下文历史章节
 Gate: 连续一周开机自启都正常显示卡片，且至少一位外部用户不看 README 也能独立装好
-Blocker: 还没有外部用户实际安装过
+Blocker: 还没有外部用户实际安装过；v1.1.1 尚未发布到 GitHub Release
 Next-Determined: DETERMINED
-Next: 把 v1.1.0 的 Release 链接交给第一位外部用户试用（不看 README 只给链接，确认能独立装好）
+Next: 把 v1.1.1 推到 main/dev 并用 npm run release 发布，然后把 Release 链接交给第一位外部用户试用
 Created: 2026-11-03
 Last-Activity: 2026-11-27
 
@@ -96,6 +96,15 @@ Last-Activity: 2026-11-27
 - Go 的 `time.Format` 截断毫秒，JS `toISOString()` 四舍五入，`app/data.go` 的 `isoTime()` 手动补了这半毫秒。
 - 从 Bash 用 `&` 启动的 exe 会随父 shell 退出被连带杀掉，看起来像「应用自己退出」；用后台任务方式启动才稳定。`taskkill` 在 Git Bash 里要加 `MSYS_NO_PATHCONV=1`，否则 `/F` 会被转成 `F:/`。
 
+### v1.1.1：同名项目 ID 冲突修复（2026-11-27）
+
+- 起因：代码走查发现 `discover()` 用子目录名当项目 ID；多个工作目录里存在同名项目时 ID 相同，`/api/handoff?id=` 会串文档、置顶状态也会一起亮。单跳到 HANDOFF 的只读看板里属于潜在数据错认，优先级高。
+- 修复：`app/data.go` 新增 `dedupeIDs()`。唯一项目保持 ID == 名称（既有置顶记录不失效）；重名的一组改成「根目录名/名称」，同名根目录下再按路径排序补 `#2`、`#3`，结果不受遍历顺序影响。显式清单路径也走同一套去重。
+- 测试：`app/data_test.go` + `app/data_dedupe_test.go` 共 9 项，覆盖跨根重名、ID 稳定性、三方重名、解析不串文档、唯一项目 ID 不变、隐藏/忽略目录跳过、header/日期解析。`go test ./...` 全绿，`go vet` 只有 `window.go:562` 一条既有的 unsafe.Pointer 提示。
+- 真机 E2E：造两个根目录各放一个「同名项目」，隔离状态启动宿主，`/api/projects` 返回 `rootA/同名项目` 与 `rootB/同名项目` 两个不同 id，`/api/handoff?id=` 分别读到各自 HANDOFF，确认串扰已消除。
+- 构建脚本补了第二个兜底：仓库根有「禁止删除子项」权限项，`go build -o app\hs-dashboard.exe` 的原子 rename 会被拒；脚本改成先编译到 `.toolchain/out` 再 `copyFileSync` 覆盖，实测 `npm run dist` 一条命令跑完。
+- 产物：`app/build/Hands-off-Dashboard-Setup-1.1.1.exe`，4,765,724 字节，SHA256 `822d42b3ea27e1cb12a9fe6641f3e45713e04e8da691e2747900f62887b6e23f`。静默安装退出码 0，注册表 `DisplayVersion=1.1.1`，日志显示 `Hands-off Dashboard 1.1.1 启动`。
+
 ### v1.1.0：新 UI 接入（2026-11-27）
 
 - 界面换成新版 `index.html`（90,920 字节，原型目录 `implementation-spec.html` 描述的方格视图 + HODB 字母标版本），旧版备份为 `index.v1.0.0.html.bak`。宿主侧 15 个接口字段（`id` / `name` / `stages` / `current` / `why` / `evidence` / `gate` / `blocker` / `next` / `nextDetermined` / `created` / `lastActivity` / `handoff` / `error` / `audience`）与新 UI 的读取完全对齐，`/api/projects`、`/api/handoff`、`/api/reveal`、`hs-refresh` 四处约定没变，`app/server.go` 一行没改。
@@ -139,10 +148,11 @@ Last-Activity: 2026-11-27
 
 ## Next steps
 
-1. **找第一位外部用户试用**：把 <https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.1.0/Hands-off-Dashboard-Setup-1.1.0.exe> 发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
-2. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
-3. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
-4. 收尾小事：`ui` / `workbuddy/main-622ca596` 两条旧分支可以删；本地 `dist/`、`demo/` 是历史残留，被 .gitignore 挡着；`index.v1.0.0.html.bak` 确认新版稳定后可以删。
+1. **发布 v1.1.1**：推 `dev` / `main`，`npm run release` 建 v1.1.1 Release 并上传 asset。
+2. **找第一位外部用户试用**：把 v1.1.1 的 Release 链接发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
+3. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
+4. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
+5. 收尾小事：`ui` / `workbuddy/main-622ca596` 两条旧分支可以删；本地 `dist/`、`demo/` 是历史残留，被 .gitignore 挡着；`index.v1.0.0.html.bak` 确认新版稳定后可以删。
 
 ## Relevant artifacts
 

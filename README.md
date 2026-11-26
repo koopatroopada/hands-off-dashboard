@@ -18,7 +18,7 @@
 
 适用于 Windows 10 / 11。
 
-**[下载安装包 `Hands-off-Dashboard-Setup-1.1.0.exe`（4.5 MB）](https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.1.0/Hands-off-Dashboard-Setup-1.1.0.exe)**
+**[下载安装包 `Hands-off-Dashboard-Setup-1.1.1.exe`（4.5 MB）](https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.1.1/Hands-off-Dashboard-Setup-1.1.1.exe)**
 
 双击即可。**没有安装向导、不需要管理员权限**：自动装到当前用户目录，装完立刻启动，看板直接出现在桌面上。同时会生成桌面快捷方式、开始菜单入口、开机自启和卸载项。
 
@@ -34,6 +34,7 @@
 - **查看全文**：卡片标题下的「查看全文」在右侧抽屉渲染整份 markdown，开头的 `Key: value` 头部会变成字段面板。
 - **定位文件**：抽屉里一键在资源管理器里选中这份 md。
 - **排序与置顶**：按创建时间或最近活动升降序，置顶记住在本地；置顶状态在看板与方格两种视图之间同步，置顶项目始终排在最前。
+- **多工作目录**：可同时扫描多个工作目录；不同目录下同名的项目会被区分开，各自的置顶状态与全文互不串扰。
 - **容错**：缺字段显示占位文案，读不到文档时卡片直接给出期望路径，不留空卡、不报错。
 
 ## 日常操作

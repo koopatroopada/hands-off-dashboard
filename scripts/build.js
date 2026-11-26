@@ -65,7 +65,32 @@ function buildGo() {
     env.GOTMPDIR = process.env.GOTMPDIR || path.join(TOOLCHAIN, 'gotmp');
     fs.mkdirSync(env.GOTMPDIR, { recursive: true });
   }
-  run(GO_BIN, ['build', '-ldflags', '-s -w -H windowsgui', '-o', 'hs-dashboard.exe', '.'], { cwd: APP, env });
+
+  // 少数环境里 go 无法直接覆盖 app\hs-dashboard.exe（它用临时文件 + rename 落盘，
+  // 而工作区根目录上有「禁止删除子项」的权限项，rename 会被拒）。
+  // 先编译到 .toolchain/out，再整文件拷回去就绕开了这一步。
+  if (fs.existsSync(TOOLCHAIN)) {
+    const staging = path.join(TOOLCHAIN, 'out');
+    fs.mkdirSync(staging, { recursive: true });
+    const staged = path.join(staging, 'hs-dashboard.exe');
+    const args = ['build', '-ldflags', '-s -w -H windowsgui'];
+    try {
+      run(GO_BIN, [...args, '-o', HOST_EXE, '.'], { cwd: APP, env, stdio: 'pipe' });
+    } catch (error) {
+      const detail = `${error.stdout || ''}${error.stderr || ''}`.trim();
+      if (!/Access is denied|拒绝访问/i.test(detail)) {
+        console.error(detail);
+        throw error;
+      }
+      run(GO_BIN, [...args, '-o', staged, '.'], { cwd: APP, env });
+      fs.copyFileSync(staged, HOST_EXE);
+      fs.rmSync(staged, { force: true });
+      console.log('  （无法直接覆盖 exe，已改为先编译到临时目录再拷回）');
+    }
+  } else {
+    run(GO_BIN, ['build', '-ldflags', '-s -w -H windowsgui', '-o', HOST_EXE, '.'], { cwd: APP, env });
+  }
+
   console.log(`  → ${HOST_EXE} (${(fs.statSync(HOST_EXE).size / 1048576).toFixed(1)} MB)`);
 }
 
