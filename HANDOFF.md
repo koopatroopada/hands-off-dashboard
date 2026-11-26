@@ -114,7 +114,7 @@ Last-Activity: 2026-11-27
 
 ### v1.1.0：新 UI 接入（2026-11-27）
 
-- 界面换成新版 `index.html`（90,920 字节，原型目录 `implementation-spec.html` 描述的方格视图 + HODB 字母标版本），旧版备份为 `index.v1.0.0.html.bak`。宿主侧 15 个接口字段（`id` / `name` / `stages` / `current` / `why` / `evidence` / `gate` / `blocker` / `next` / `nextDetermined` / `created` / `lastActivity` / `handoff` / `error` / `audience`）与新 UI 的读取完全对齐，`/api/projects`、`/api/handoff`、`/api/reveal`、`hs-refresh` 四处约定没变，`app/server.go` 一行没改。
+- 界面换成新版 `index.html`（90,920 字节，原型目录 `implementation-spec.html` 描述的方格视图 + HODB 字母标版本）。旧版备份 `index.v1.0.0.html.bak` 已在收尾时删除，旧界面在提交 `615478a8` 里可按字节找回。宿主侧 15 个接口字段（`id` / `name` / `stages` / `current` / `why` / `evidence` / `gate` / `blocker` / `next` / `nextDetermined` / `created` / `lastActivity` / `handoff` / `error` / `audience`）与新 UI 的读取完全对齐，`/api/projects`、`/api/handoff`、`/api/reveal`、`hs-refresh` 四处约定没变，`app/server.go` 一行没改。
 - 新版把 `.drawer` 从「面板本体」改成了外层定位容器（真正的白底在 `.drawer .drawer-panel`）。`ui/preload.js` 的 `OVERRIDE_CSS` 原来直接给 `.drawer` 刷 0.97 白底，套到新结构上会把整屏遮罩刷成白色；已改成 `.drawer` 强制透明、只给 `.drawer-panel` 白底。
 - 方格卡片用 `--glass-strong`（0.74）而不是看板卡的 `--glass`（0.56），新加了 `--hs-card-strong = 卡片不透明度 + 0.18`（上限 1），右键面板拖卡片滑块时两种卡片一起变透，落差保持不变。
 - 新界面的 `.stage / .app-shell / .app-header / .board-area / .board-panel / .project / .gallery-tile / .drawer / .drawer-panel` 九个钩子全部存在，覆盖样式继续生效；圆角（26/20/16）与 `window.go` 的 `updateWindowRegion()` 断点（700 / 480）一致，`SetWindowRgn` 不用改。
