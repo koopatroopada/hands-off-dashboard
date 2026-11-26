@@ -55,8 +55,20 @@ const OVERRIDE_CSS = `
     background: rgba(255, 255, 255, var(--hs-card, 0.56)) !important;
   }
 
-  /* 抽屉自带不透明底，打开时保持可读 */
-  .drawer { background: rgba(255, 255, 255, 0.97) !important; }
+  /* 方格卡片同样跟随卡片不透明度（原型里是 --glass-strong，0.74） */
+  .gallery-tile {
+    background: rgba(255, 255, 255, var(--hs-card-strong, 0.74)) !important;
+  }
+
+  /* 抽屉：外层容器只做定位和遮罩，务必保持透明；
+     真正的不透明底只给右侧面板，这样遮罩下面的看板仍然可见 */
+  .drawer {
+    background: transparent !important;
+  }
+
+  .drawer .drawer-panel {
+    background: rgba(255, 255, 255, 0.97) !important;
+  }
 
   /* ── 右键面板 ── */
   #${PANEL_ID} {
@@ -291,6 +303,8 @@ function applyOpacity() {
   const root = document.documentElement;
   root.style.setProperty('--hs-shell', String(settings.shellOpacity));
   root.style.setProperty('--hs-card', String(settings.cardOpacity));
+  // 方格卡片本来就比看板卡片更实（0.74 对 0.56），保持同样的落差
+  root.style.setProperty('--hs-card-strong', String(Math.min(1, settings.cardOpacity + 0.18)));
 }
 
 function persist() {

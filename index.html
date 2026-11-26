@@ -111,6 +111,7 @@
       --navy-hover: #243873;
       --navy-active: #142046;
       --stage-teal: #0f969f;
+      --stage-ink: #0a6b72;
       --board: #f3f4f7;
       --board-border: #e7e9ef;
       --card: #ffffff;
@@ -226,22 +227,118 @@
     /* ── Header ──────────────────────────────────────────────── */
     .app-header {
       flex: 0 0 auto;
-      padding: 24px 28px 16px;
+      padding: 18px 28px;
       background: var(--card);
       border-bottom: 1px solid var(--border-soft);
     }
 
     .header-top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 24px;
+      gap: 18px;
       min-width: 0;
+    }
+
+    .header-lead {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .view-switch {
+      appearance: none;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex: 0 0 auto;
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
+      margin-top: 0;
+      padding: 0;
+      border: 1px solid var(--control-border);
+      border-radius: 10px;
+      background: var(--control-surface);
+      color: var(--fg-2);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.2;
+      cursor: pointer;
+      white-space: nowrap;
+      transition:
+        background-color var(--motion-fast) var(--ease-standard),
+        border-color var(--motion-fast) var(--ease-standard),
+        color var(--motion-fast) var(--ease-standard),
+        box-shadow var(--motion-fast) var(--ease-standard);
+    }
+
+    .view-switch::before {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: 12px;
+    }
+
+    .view-switch:hover {
+      background: var(--bg);
+      border-color: var(--border);
+      color: var(--fg);
+    }
+
+    .view-switch:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+
+    .view-switch-icon {
+      --od-icon-size: 15px;
+      color: var(--meta);
+      transition: color var(--motion-fast) var(--ease-standard);
+    }
+
+    .view-switch:hover .view-switch-icon {
+      color: var(--fg-2);
+    }
+
+    .view-switch .icon-view-board { display: none; }
+
+    .app-shell.is-gallery .view-switch .icon-view-gallery { display: none; }
+    .app-shell.is-gallery .view-switch .icon-view-board { display: inline-block; }
+
+    .header-aside {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px 10px;
+      flex: 0 0 auto;
+      min-width: 0;
+    }
+
+    .demo-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 3px 9px;
+      border: 1px solid var(--control-border);
+      border-radius: var(--radius-pill);
+      background: var(--control-surface);
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
     }
 
     .identity {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
       min-width: 0;
     }
@@ -259,30 +356,15 @@
     }
 
     .brandmark svg {
-      width: 20px;
-      height: 20px;
+      width: 30px;
+      height: 30px;
     }
 
-    .title-block {
-      min-width: 0;
-    }
-
-    .app-title {
-      font-family: var(--font-display-ui);
-      font-size: clamp(28px, 2.6vw, 40px);
-      font-weight: 600;
-      line-height: 1.08;
-      letter-spacing: -0.035em;
-      color: var(--fg);
-      text-wrap: balance;
-    }
-
-    .subtitle {
-      margin-top: 4px;
-      font-size: 13px;
-      line-height: 1.5;
-      color: var(--muted);
-      letter-spacing: -0.01em;
+    .brandmark .monogram {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0;
+      text-rendering: geometricPrecision;
     }
 
     .generated {
@@ -300,24 +382,17 @@
       font-weight: 500;
     }
 
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-top: 20px;
-      min-width: 0;
-    }
-
     .controls {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
+      flex: 0 1 auto;
       flex-wrap: wrap;
       min-width: 0;
     }
 
     .toolbar-label {
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 600;
       line-height: 1;
       letter-spacing: 0.08em;
@@ -329,9 +404,9 @@
       display: inline-flex;
       align-items: center;
       gap: 2px;
-      padding: 3px;
+      padding: 2px;
       border: 1px solid var(--control-border);
-      border-radius: 10px;
+      border-radius: 9px;
       background: var(--control-surface);
     }
 
@@ -339,11 +414,11 @@
       appearance: none;
       border: 0;
       background: transparent;
-      color: var(--muted);
-      min-height: 36px;
-      padding: 8px 12px;
+      color: var(--fg-2);
+      min-height: 28px;
+      padding: 5px 10px;
       border-radius: 7px;
-      font-size: 12.5px;
+      font-size: 11.5px;
       font-weight: 500;
       line-height: 1.2;
       cursor: pointer;
@@ -383,14 +458,14 @@
       appearance: none;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      min-height: 36px;
-      padding: 8px 12px;
+      gap: 6px;
+      min-height: 28px;
+      padding: 5px 10px;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 9px;
       background: var(--card);
       color: var(--fg-2);
-      font-size: 12.5px;
+      font-size: 11.5px;
       font-weight: 500;
       line-height: 1.2;
       cursor: pointer;
@@ -406,6 +481,7 @@
     }
 
     .sort-arrow {
+      --od-icon-size: 12px;
       transition: transform var(--motion-fast) var(--ease-standard);
     }
 
@@ -414,8 +490,10 @@
     .count-pill {
       display: inline-flex;
       align-items: center;
+      flex: 0 0 auto;
       min-height: 28px;
       margin-left: auto;
+      margin-right: clamp(24px, 4vw, 48px);
       padding: 4px 12px;
       border: 1px solid var(--control-border);
       border-radius: var(--radius-pill);
@@ -425,6 +503,64 @@
       font-weight: 500;
       line-height: 1.2;
       white-space: nowrap;
+    }
+
+    .project-count {
+      min-height: 26px;
+      margin-left: 2px;
+      margin-right: 0;
+      padding: 3px 10px;
+      font-size: 10.5px;
+    }
+
+    .gallery-meta {
+      display: none;
+      margin-left: 0;
+      margin-right: 0;
+    }
+
+    /* Gallery 视图：把页头收成一条工具带，让方格成为主角 */
+    .app-shell.is-gallery .identity,
+    .app-shell.is-gallery .controls,
+    .app-shell.is-gallery .project-count {
+      display: none;
+    }
+
+    .app-shell.is-gallery .app-header {
+      padding-bottom: 14px;
+      border-bottom-color: transparent;
+    }
+
+    .app-shell.is-gallery .header-top {
+      align-items: center;
+    }
+
+    .app-shell.is-gallery .header-lead {
+      flex: 0 0 auto;
+    }
+
+    .app-shell.is-gallery .view-switch {
+      margin-top: 0;
+    }
+
+    .app-shell.is-gallery .generated {
+      display: none;
+    }
+
+    .app-shell.is-gallery .gallery-meta {
+      display: inline-flex;
+    }
+
+    .app-shell.is-gallery .board-scroller {
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scroll-snap-type: none;
+    }
+
+    .app-shell.is-gallery .board-scroller::-webkit-scrollbar {
+      width: 9px;
+      height: 9px;
     }
 
     /* ── Board ───────────────────────────────────────────────── */
@@ -494,6 +630,138 @@
       place-items: center;
       width: 100%;
       min-width: 0;
+    }
+
+    /* ── Gallery（方格展示）─────────────────────────────────────
+       宽度保持 140px；高度改由标题与阶段的占位决定，不再锁死为正方形：
+       标题占几行，卡片就长多高，标题下方不留空白。 */
+    .board.is-gallery {
+      display: grid;
+      grid-auto-flow: row;
+      grid-template-columns: repeat(auto-fit, 140px);
+      grid-template-rows: auto;
+      grid-auto-columns: auto;
+      grid-auto-rows: auto;
+      justify-content: center;
+      align-content: start;
+      align-items: stretch;
+      gap: 12px;
+      width: 100%;
+      height: auto;
+      min-height: 100%;
+      padding: 2px;
+    }
+
+    .gallery-tile {
+      container-type: inline-size;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 8px;
+      width: 100%;
+      padding: clamp(11px, 8.6cqw, 14px);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      background: var(--glass-strong);
+      box-shadow: var(--glass-shadow);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      overflow: hidden;
+      transition:
+        box-shadow var(--motion-base) var(--ease-standard),
+        border-color var(--motion-base) var(--ease-standard);
+    }
+
+    @media (hover: hover) {
+      .gallery-tile:hover {
+        border-color: rgba(255, 255, 255, 0.96);
+        box-shadow: var(--glass-shadow-hover);
+      }
+    }
+
+    .gallery-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .gallery-head .gallery-name {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .gallery-tile.is-pinned {
+      border-color: rgba(27, 42, 94, 0.28);
+    }
+
+    .gallery-name {
+      margin: 0;
+      font-family: var(--font-display-ui);
+      font-size: clamp(13.5px, 11.4cqw, 16px);
+      font-weight: 600;
+      line-height: 1.24;
+      letter-spacing: -0.02em;
+      color: var(--fg);
+      overflow-wrap: anywhere;
+      text-wrap: pretty;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .gallery-stage {
+      min-width: 0;
+      padding-top: 8px;
+      border-top: 1px solid var(--glass-hairline);
+    }
+
+    .gallery-stage-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.06em;
+      color: var(--fg-2);
+    }
+
+    .gallery-stage-dot {
+      width: 5px;
+      height: 5px;
+      flex: none;
+      border-radius: 50%;
+      background: var(--stage-teal);
+    }
+
+    .gallery-stage-name {
+      margin-top: 5px;
+      font-family: var(--font-display-ui);
+      font-size: clamp(12px, 9cqw, 13.5px);
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+      color: var(--stage-ink);
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .gallery-stage-name.is-placeholder {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .gallery-tile.is-placeholder .gallery-stage-dot {
+      background: var(--meta);
+    }
+
+    .gallery-tile.is-error .gallery-stage-dot {
+      background: var(--danger);
     }
 
     .project {
@@ -572,6 +840,7 @@
 
     .pin {
       appearance: none;
+      position: relative;
       flex: 0 0 auto;
       display: grid;
       place-items: center;
@@ -587,6 +856,23 @@
       transition:
         color var(--motion-fast) var(--ease-standard),
         background-color var(--motion-fast) var(--ease-standard);
+    }
+
+    /* 方格卡片更小，用紧凑尺寸，靠 ::before 把可点区域补到 44px。 */
+    .pin.pin-tile {
+      width: 28px;
+      height: 28px;
+      margin: -2px -2px 0 0;
+      border-radius: 7px;
+    }
+
+    .pin.pin-tile .icon-pin { --od-icon-size: 15px; }
+
+    .pin.pin-tile::before {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border-radius: 12px;
     }
 
     .pin:hover {
@@ -1122,34 +1408,37 @@
 
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width: 1100px) {
-      .app-header { padding: 20px 20px 16px; }
+      .app-header { padding: 16px 20px; }
       .board-area { padding: 16px 20px 20px; }
-      .app-title { font-size: clamp(27px, 3vw, 34px); }
+      .header-top { flex-wrap: wrap; row-gap: 10px; }
+      .header-aside { margin-left: auto; }
     }
 
     @media (max-width: 900px) {
       .board { grid-auto-columns: max(180px, calc((100% - 12px) * 0.3)); }
       .header-top { gap: 16px; }
       .generated { font-size: 10.5px; }
-      .toolbar { margin-top: 16px; }
+      .header-lead { gap: 12px; }
     }
 
     @media (max-width: 700px) {
       .stage { padding: 12px; }
       .app-shell { border-radius: 20px; }
-      .app-header { padding: 16px 16px 12px; }
+      .app-header { padding: 16px 16px 14px; }
       .board-area { padding: 12px; }
       .board-panel { padding: 8px; border-radius: 16px; }
-      .header-top { flex-direction: column; gap: 8px; }
+      .header-top { flex-wrap: wrap; gap: 10px 12px; }
+      .header-lead { flex-wrap: wrap; gap: 10px; flex: 1 1 100%; }
+      .header-aside { justify-content: flex-end; margin-left: auto; }
       .generated { padding-top: 0; text-align: left; }
       .identity { gap: 12px; }
+      .app-shell.is-gallery .header-top { flex-direction: row; align-items: center; gap: 12px; }
+      .board.is-gallery { gap: 12px; }
+      .gallery-tile { border-radius: 12px; }
       .brandmark { width: 32px; height: 32px; border-radius: 10px; }
-      .brandmark svg { width: 18px; height: 18px; }
-      .app-title { font-size: 28px; }
-      .subtitle { font-size: 12px; }
-      .toolbar { flex-wrap: wrap; gap: 8px; }
-      .controls { gap: 8px; }
-      .count-pill { margin-left: 0; }
+      .brandmark svg { width: 24px; height: 24px; }
+      .controls { gap: 6px; }
+      .count-pill { margin-left: 0; margin-right: 0; }
       .project { padding: 16px 16px 12px; border-radius: 14px; }
       .block { margin-top: 16px; }
       .why { font-size: 13.5px; min-height: 6.4em; }
@@ -1161,7 +1450,10 @@
       .app-header { padding: 16px 12px 12px; }
       .board-area { padding: 8px; }
       .board-panel { padding: 8px; border-radius: 14px; }
-      .app-title { font-size: 25px; }
+      .board.is-gallery { grid-template-columns: repeat(auto-fit, 128px); gap: 10px; }
+      .gallery-stage { padding-top: 7px; }
+      .gallery-name { font-size: 14px; -webkit-line-clamp: 2; }
+      .gallery-stage-name { font-size: 12px; }
       .project { padding: 16px 12px 12px; }
       .project-title { font-size: 24px; }
       .why { font-size: 13.5px; min-height: 6.4em; }
@@ -1173,7 +1465,6 @@
 
     @media (max-height: 700px) {
       .app-header { padding-top: 16px; }
-      .toolbar { margin-top: 12px; }
       .board-area { padding-top: 12px; }
       .project { padding-top: 16px; }
       .block { margin-top: 16px; }
@@ -1210,43 +1501,64 @@
     <div class="app-shell">
       <header class="app-header" aria-label="Hands-off Dashboard header and toolbar">
         <div class="header-top">
-          <div class="identity">
-            <span class="brandmark" aria-hidden="true">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2.5" y="2.5" width="5.6" height="5.6" rx="1.3" />
-                <rect x="11.9" y="2.5" width="5.6" height="5.6" rx="1.3" />
-                <rect x="2.5" y="11.9" width="5.6" height="5.6" rx="1.3" />
-                <rect x="11.9" y="11.9" width="5.6" height="5.6" rx="1.3" />
-              </svg>
-            </span>
-            <div class="title-block">
-              <h1 class="app-title">Hands-off Dashboard</h1>
-              <p class="subtitle">Only projects with a handoff · Sort by created or last activity</p>
+          <div class="header-lead">
+            <div class="identity">
+              <span class="brandmark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <g class="monogram" fill="currentColor" text-anchor="middle" font-size="10.5">
+                    <text x="6.75" y="10.5">H</text>
+                    <text x="17.25" y="10.5">O</text>
+                    <text x="6.75" y="21">D</text>
+                    <text x="17.25" y="21">B</text>
+                  </g>
+                </svg>
+              </span>
+              <h1 class="sr-only">Hands-off Dashboard</h1>
+            </div>
+            <div class="controls" id="controls">
+              <span class="toolbar-label">Sort</span>
+              <div class="segmented" role="group" aria-label="Sort by">
+                <button class="sort-button" type="button" data-sort="created" aria-pressed="true">Created</button>
+                <button class="sort-button" type="button" data-sort="lastActivity" aria-pressed="false">Last activity</button>
+              </div>
+              <button class="direction-button" id="directionButton" type="button" aria-label="Sorted descending. Switch to ascending.">
+                <svg class="od-icon icon-arrow sort-arrow" id="sortArrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M8 3v10M4.5 9.5 8 13l3.5-3.5" />
+                </svg>
+                <span id="directionLabel">Descending</span>
+              </button>
             </div>
           </div>
 
-          <div class="generated">
-            Data generated <strong><time id="readTime" datetime="">—</time></strong>
-          </div>
-        </div>
-
-        <div class="toolbar">
-          <div class="controls" id="controls">
-            <span class="toolbar-label">Sort</span>
-            <div class="segmented" role="group" aria-label="Sort by">
-              <button class="sort-button" type="button" data-sort="created" aria-pressed="true">Created</button>
-              <button class="sort-button" type="button" data-sort="lastActivity" aria-pressed="false">Last activity</button>
+          <div class="header-aside">
+            <span class="demo-badge" id="demoBadge" hidden>示例数据</span>
+            <div class="generated">
+              Data generated <strong><time id="readTime" datetime="">—</time></strong>
             </div>
-            <button class="direction-button" id="directionButton" type="button" aria-label="Sorted descending. Switch to ascending.">
-              <svg class="od-icon icon-arrow sort-arrow" id="sortArrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M8 3v10M4.5 9.5 8 13l3.5-3.5" />
+            <span class="count-pill project-count" id="projectCount">—</span>
+            <div class="count-pill gallery-meta" id="galleryMeta">
+              <span id="galleryCount">—</span>
+            </div>
+            <button
+              class="view-switch"
+              id="viewSwitch"
+              type="button"
+              aria-label="切换到方格视图"
+              title="切换到方格视图"
+            >
+              <svg class="od-icon view-switch-icon icon-view-gallery" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="5" height="5" rx="1.2" />
+                <rect x="9" y="2" width="5" height="5" rx="1.2" />
+                <rect x="2" y="9" width="5" height="5" rx="1.2" />
+                <rect x="9" y="9" width="5" height="5" rx="1.2" />
               </svg>
-              <span id="directionLabel">Descending</span>
+              <svg class="od-icon view-switch-icon icon-view-board" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 4.5h10M3 8h10M3 11.5h10" />
+              </svg>
             </button>
           </div>
-
-          <span class="count-pill" id="projectCount">—</span>
         </div>
+
       </header>
 
       <main class="board-area">
@@ -1300,9 +1612,13 @@
     const API_PROJECTS = '/api/projects';
 
     const els = {
+      appShell: document.querySelector('.app-shell'),
       board: document.getElementById('board'),
       boardScroller: document.getElementById('boardScroller'),
       projectCount: document.getElementById('projectCount'),
+      galleryCount: document.getElementById('galleryCount'),
+      demoBadge: document.getElementById('demoBadge'),
+      viewSwitch: document.getElementById('viewSwitch'),
       controls: document.getElementById('controls'),
       directionButton: document.getElementById('directionButton'),
       directionLabel: document.getElementById('directionLabel'),
@@ -1323,6 +1639,7 @@
       projects: [],
       sortField: 'created',
       direction: 'desc',
+      view: 'board',
       pinned: loadPinned(),
       loading: true,
       error: null,
@@ -1330,8 +1647,152 @@
       drawerId: null,
       pendingDoc: false,
       lastFocus: null,
-      emptyPreview: new URLSearchParams(window.location.search).get('state') === 'empty'
+      demo: false
     };
+
+    /* ── Prototype data ─────────────────────────────────────────
+       原型预览兜底：没有启动本地服务时，用 6 个虚拟占位项目展示界面。
+       真实桌面环境能拿到 /api/projects 时，这份数据不会出现。 */
+    const DEMO_PROJECTS = [
+      {
+        id: 'nan-yu-cafe-site',
+        name: '南屿咖啡官网',
+        error: null,
+        title: '南屿咖啡官网改版',
+        audience: '店主本人与到店前的顾客',
+        why: '现有站点在手机上要翻好几步才能看到菜单，这次重做只解决一件事：让到店前的人半分钟内找到地址、营业时间和今日豆单。',
+        stages: ['需求梳理', '视觉方向', '高保真稿', '前端实现', '上线验收'],
+        current: '视觉方向',
+        evidence: '首页与到店页两版视觉方向稿已完成，预约入口收进了首屏。',
+        gate: '店主确认视觉方向，并给出完整豆单与营业时间。',
+        blocker: '豆单每周变化，还没定由谁维护。',
+        next: '约店主过两版视觉方向，定一版后再进高保真。',
+        nextDetermined: true,
+        created: '2026-10-28',
+        lastActivity: '2026-11-24',
+        handoff: {
+          relPath: '南屿咖啡官网/HANDOFF.md',
+          mtime: '2026-11-24T18:30:00.000Z',
+          bytes: 6820,
+          title: '南屿咖啡官网改版'
+        }
+      },
+      {
+        id: 'early-writing',
+        name: '早起写作打卡',
+        error: null,
+        title: '早起写作打卡',
+        audience: '想每天早起写一点的普通用户',
+        why: '想把每天早起写二十分钟这件事做得轻一点：打开就能写，写完自动留一份记录，不给自己增加整理负担。',
+        stages: ['想法验证', '交互原型', '小范围内测', '体验打磨', '正式发布'],
+        current: '小范围内测',
+        evidence: '可点原型跑通了「打开→写→保存」主链路，已经邀请朋友试用。',
+        gate: '连续使用两周仍然顺手，且没有出现草稿丢失。',
+        blocker: '提醒太频繁，晚上也会响。',
+        next: '加一个免打扰时段，再请试用的人回来试一轮。',
+        nextDetermined: true,
+        created: '2026-11-02',
+        lastActivity: '2026-11-25',
+        handoff: {
+          relPath: '早起写作打卡/HANDOFF.md',
+          mtime: '2026-11-25T09:10:00.000Z',
+          bytes: 7480,
+          title: '早起写作打卡'
+        }
+      },
+      {
+        id: 'city-walk-map',
+        name: '城市散步地图',
+        error: null,
+        title: '城市散步地图',
+        audience: '喜欢在城市里走路的自己和朋友',
+        why: '把自己反复走的几条散步路线整理成一张能离线打开的小地图，标出树荫、长椅和可以坐一会儿的地方。',
+        stages: ['资料收集', '路线梳理', '路线实测', '设计稿', '开发', '发布'],
+        current: '路线梳理',
+        evidence: '第一批点位已经标完，三条候选路线能在地图上连成闭环。',
+        gate: '三条路线各实地走一遍，确认没有施工或关门路段。',
+        blocker: '还没确认离线地图用哪套底图。',
+        next: '周六先走一遍最短的那条线，记下沿途变化。',
+        nextDetermined: false,
+        created: '2026-11-08',
+        lastActivity: '2026-11-22',
+        handoff: {
+          relPath: '城市散步地图/HANDOFF.md',
+          mtime: '2026-11-22T16:40:00.000Z',
+          bytes: 5360,
+          title: '城市散步地图'
+        }
+      },
+      {
+        id: 'podcast-workbench',
+        name: '播客剪辑工作台',
+        error: null,
+        title: '播客剪辑工作台',
+        audience: '做播客的自己，以及偶尔帮忙剪片的朋友',
+        why: '一期节目从录音到成片要来回切三四个工具，想把选段、字幕和多轨混音放进同一个工作台。',
+        stages: ['需求梳理', '流程设计', '最小版本', '自用验证', '发布'],
+        current: '流程设计',
+        evidence: '一张从录音到导出成片的流程图已经画到 v0.3，确定了三个必须打通的环节。',
+        gate: '用新流程完整剪完一期节目，中途不需要换工具。',
+        blocker: '素材命名规则还没统一，导入时经常分不清谁是谁。',
+        next: '先定一套录音文件命名规则，再开始搭最小版本。',
+        nextDetermined: true,
+        created: '2026-10-20',
+        lastActivity: '2026-11-21',
+        handoff: {
+          relPath: '播客剪辑工作台/HANDOFF.md',
+          mtime: '2026-11-21T21:20:00.000Z',
+          bytes: 8940,
+          title: '播客剪辑工作台'
+        }
+      },
+      {
+        id: 'photo-archive',
+        name: '旧相册数字化',
+        error: null,
+        title: '旧相册数字化',
+        audience: '家里的长辈和自己',
+        why: '家里几本旧相册已经开始发脆，想在它们彻底散掉之前留一份能按年份翻看的电子档。',
+        stages: ['清点', '扫描', '整理', '备份归档'],
+        current: '扫描',
+        evidence: '第一册已经扫完，页面顺序和背面手写备注都单独记了下来。',
+        gate: '全部相册扫描完成，并且至少做两份异地备份。',
+        blocker: '有几张相片受潮粘连，直接揭开可能会伤到画面。',
+        next: '先请教修复师怎么处理粘连的相片，再继续扫。',
+        nextDetermined: true,
+        created: '2026-09-30',
+        lastActivity: '2026-11-18',
+        handoff: {
+          relPath: '旧相册数字化/HANDOFF.md',
+          mtime: '2026-11-18T20:15:00.000Z',
+          bytes: 6120,
+          title: '旧相册数字化'
+        }
+      },
+      {
+        id: 'weekend-bread-class',
+        name: '周末面包课',
+        error: null,
+        title: '周末面包课',
+        audience: '想在家做面包的零基础学员',
+        why: '想把周末在家烤面包的流程整理成三个小时的线下小课，让第一次做面包的人也能带着成品回家。',
+        stages: ['课程大纲', '配方测试', '招募试课', '正式开课'],
+        current: '配方测试',
+        evidence: '三款基础面包的配方已经按家用烤箱调整过，试做结果稳定。',
+        gate: '四款配方都能在三个小时内稳定复现。',
+        blocker: '家里的烤箱一次只能烤两盘，试课人数受限。',
+        next: '借一台更大的烤箱，把完整菜单试做一遍。',
+        nextDetermined: true,
+        created: '2026-11-10',
+        lastActivity: '2026-11-23',
+        handoff: {
+          relPath: '周末面包课/HANDOFF.md',
+          mtime: '2026-11-23T11:05:00.000Z',
+          bytes: 7280,
+          title: '周末面包课'
+        }
+      }
+    ];
 
     /* ── Local preferences ───────────────────────────────────── */
 
@@ -1405,6 +1866,32 @@
       return `${index + 1}/${total}`;
     }
 
+    function demoHandoffMarkdown(project) {
+      const rows = [
+        ['Audience', project.audience],
+        ['Why', project.why],
+        ['Stages', Array.isArray(project.stages) && project.stages.length ? project.stages.join(' → ') : null],
+        ['Current', project.current],
+        ['Evidence', project.evidence],
+        ['Gate', project.gate],
+        ['Blocker', project.blocker],
+        [
+          'Next-Determined',
+          project.nextDetermined === true
+            ? 'DETERMINED'
+            : project.nextDetermined === false
+              ? 'UNDETERMINED'
+              : null
+        ],
+        ['Next', project.next],
+        ['Created', project.created],
+        ['Last-Activity', project.lastActivity]
+      ].filter(([, value]) => Boolean(value));
+
+      const header = rows.map(([key, value]) => `${key}: ${value}`).join('\n');
+      return `${header}${header ? '\n\n' : ''}# Handoff: ${project.name}\n\n> 这是原型预览使用的示例数据。接入本地服务后，这里会显示真实的交接文档。`;
+    }
+
     /* ── Icons ───────────────────────────────────────────────── */
 
     function pinIcon() {
@@ -1450,32 +1937,35 @@
         render();
       }
 
+      let liveProjects = null;
+
       try {
         const response = await fetch(API_PROJECTS, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Request failed with HTTP ${response.status}`);
         const payload = await response.json();
+        const list = Array.isArray(payload) ? payload : payload && payload.projects;
 
-        state.projects = Array.isArray(payload.projects) ? payload.projects : [];
-        state.readAt = new Date();
-        state.error = null;
+        // 预览环境的静态服务可能对 /api/projects 返回 200 + 空结果或非预期结构，
+        // 这种“看起来成功但没有项目”的情况同样要落到示例数据上。
+        if (Array.isArray(list) && list.length > 0) liveProjects = list;
       } catch (error) {
-        state.projects = [];
-        state.error =
-          error instanceof TypeError
-            ? 'The local service did not respond. Start it with start.bat, then reload this page.'
-            : error.message || String(error);
-      } finally {
-        state.loading = false;
-        render();
-        els.status.textContent = state.error
-          ? 'Read failed'
-          : `Loaded ${state.projects.length} ${state.projects.length === 1 ? 'project' : 'projects'}`;
+        liveProjects = null;
       }
+
+      // 原型预览兜底：接口不可用、返回空列表或结构不符时，统一用 6 个虚拟占位项目。
+      // 桌面端返回真实项目时，这份示例数据不会出现。
+      state.demo = liveProjects === null;
+      state.projects = state.demo ? DEMO_PROJECTS : liveProjects;
+      state.readAt = new Date();
+      state.error = null;
+      state.loading = false;
+      render();
+      els.status.textContent = state.demo
+        ? `已载入 ${state.projects.length} 个示例项目`
+        : `Loaded ${state.projects.length} ${state.projects.length === 1 ? 'project' : 'projects'}`;
     }
 
     function sortedProjects() {
-      if (state.emptyPreview) return [];
-
       return [...state.projects].sort((a, b) => {
         // Cards that failed to load stay at the end.
         if (Boolean(a.error) !== Boolean(b.error)) return a.error ? 1 : -1;
@@ -1650,6 +2140,39 @@
       `;
     }
 
+    /** 展示页的方格：只保留项目名与当前阶段，右上角带同源的置顶按钮。 */
+    function galleryTileMarkup(project) {
+      const hasError = Boolean(project.error);
+      const stageText = hasError ? '交接文档不可读' : project.current || '未标注阶段';
+      const isPlaceholder = hasError || !project.current;
+      const stageTitle = hasError ? project.error : stageText;
+      const stageLabel = hasError ? '状态' : '当前阶段';
+      const isPinned = state.pinned.has(project.id);
+      const pinLabel = isPinned ? `取消置顶 ${project.name}` : `置顶 ${project.name}`;
+
+      return `
+        <article class="gallery-tile${hasError ? ' is-error' : ''}${isPlaceholder ? ' is-placeholder' : ''}${isPinned ? ' is-pinned' : ''}">
+          <div class="gallery-head">
+            <h2 class="gallery-name" title="${escapeHtml(project.name)}" lang="zh-CN">${escapeHtml(project.name)}</h2>
+            <button
+              class="pin pin-tile"
+              type="button"
+              data-pin-id="${escapeHtml(project.id)}"
+              aria-pressed="${isPinned}"
+              aria-label="${escapeHtml(pinLabel)}"
+              title="${escapeHtml(pinLabel)}"
+            >
+              ${pinIcon()}
+            </button>
+          </div>
+          <div class="gallery-stage">
+            <span class="gallery-stage-label"><span class="gallery-stage-dot" aria-hidden="true"></span>${stageLabel}</span>
+            <p class="gallery-stage-name${isPlaceholder ? ' is-placeholder' : ''}" title="${escapeHtml(stageTitle)}" lang="zh-CN">${escapeHtml(stageText)}</p>
+          </div>
+        </article>
+      `;
+    }
+
     /** 读不到交接文档时，仍然用同一套卡片骨架，只是字段都是占位。 */
     function errorCardMarkup(project) {
       return `
@@ -1742,7 +2265,16 @@
       );
     }
 
+    function updateViewSwitch() {
+      const isGallery = state.view === 'gallery';
+      const action = isGallery ? '切换到看板视图' : '切换到方格视图';
+      els.viewSwitch.setAttribute('aria-label', action);
+      els.viewSwitch.title = action;
+    }
+
     function setupCardOverflow() {
+      if (state.view === 'gallery') return;
+
       document.querySelectorAll('.project').forEach((card) => {
         const title = card.querySelector('.project-title');
         if (title) {
@@ -1783,18 +2315,30 @@
         els.readTime.setAttribute('datetime', stampValue(state.readAt));
       }
 
+      const isGallery = state.view === 'gallery';
+      els.appShell.classList.toggle('is-gallery', isGallery);
+      els.demoBadge.hidden = !state.demo;
+      els.demoBadge.textContent = `示例数据 · ${DEMO_PROJECTS.length} 个占位项目`;
+      els.boardScroller.setAttribute(
+        'aria-label',
+        isGallery ? 'Project gallery, square tiles' : 'Project list, horizontally scrollable'
+      );
+      updateViewSwitch();
+
       if (state.loading) {
         els.projectCount.textContent = 'Reading…';
+        els.galleryCount.textContent = '读取中…';
         els.controls.hidden = true;
-        els.board.classList.add('is-empty');
+        els.board.className = 'board is-empty';
         els.board.innerHTML = loadingMarkup();
         return;
       }
 
       if (state.error) {
         els.projectCount.textContent = 'Read failed';
+        els.galleryCount.textContent = '读取失败';
         els.controls.hidden = true;
-        els.board.classList.add('is-empty');
+        els.board.className = 'board is-empty';
         els.board.innerHTML = errorMarkup(state.error);
         return;
       }
@@ -1803,9 +2347,20 @@
       const isEmpty = projects.length === 0;
 
       els.projectCount.textContent = `${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`;
+      els.galleryCount.textContent = `${projects.length} 个项目`;
       els.controls.hidden = isEmpty;
-      els.board.classList.toggle('is-empty', isEmpty);
-      els.board.innerHTML = isEmpty ? emptyMarkup() : projects.map(projectMarkup).join('');
+      els.board.className = 'board';
+
+      if (isEmpty) {
+        els.board.classList.add('is-empty');
+        els.board.innerHTML = emptyMarkup();
+      } else if (isGallery) {
+        els.board.classList.add('is-gallery');
+        els.board.innerHTML = projects.map(galleryTileMarkup).join('');
+      } else {
+        els.board.innerHTML = projects.map(projectMarkup).join('');
+      }
+
       updateControls();
       window.requestAnimationFrame(setupCardOverflow);
 
@@ -2027,12 +2582,18 @@
       els.drawerTitle.textContent = project.name;
       els.drawerPath.textContent = project.handoff ? `${project.handoff.relPath}` : '';
       els.drawerBody.innerHTML = '<p class="drawer-hint">读取中…</p>';
-      els.drawerReveal.hidden = !project.handoff;
+      els.drawerReveal.hidden = state.demo || !project.handoff;
 
       els.drawer.hidden = false;
       els.drawer.setAttribute('aria-hidden', 'false');
       window.requestAnimationFrame(() => els.drawer.classList.add('is-open'));
       els.drawerClose.focus();
+
+      if (state.demo) {
+        els.drawerBody.innerHTML = renderMarkdown(demoHandoffMarkdown(project));
+        els.drawerBody.scrollTop = 0;
+        return;
+      }
 
       try {
         const response = await fetch(`/api/handoff?id=${encodeURIComponent(projectId)}`, {
@@ -2107,7 +2668,7 @@
       savePinned();
       render();
       focusPin(projectId);
-      els.status.textContent = `${wasPinned ? 'Unpinned' : 'Pinned'} ${project.name}`;
+      els.status.textContent = `${wasPinned ? '已取消置顶' : '已置顶'} ${project.name}`;
     });
 
     document.querySelectorAll('.sort-button').forEach((button) => {
@@ -2126,7 +2687,16 @@
       els.status.textContent = `Sorted by ${state.sortField === 'created' ? 'created' : 'last activity'}, ${state.direction === 'asc' ? 'ascending' : 'descending'}`;
     });
 
+    els.viewSwitch.addEventListener('click', () => {
+      state.view = state.view === 'gallery' ? 'board' : 'gallery';
+      render();
+      els.boardScroller.scrollTop = 0;
+      els.boardScroller.scrollLeft = 0;
+      els.status.textContent = state.view === 'gallery' ? '已切换到方格视图' : '已切换到看板视图';
+    });
+
     els.boardScroller.addEventListener('wheel', (event) => {
+      if (state.view === 'gallery') return;
       if (event.ctrlKey) return;
       if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
 
