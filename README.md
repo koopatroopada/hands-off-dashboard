@@ -90,10 +90,13 @@ Last-Activity: 2026-11-09
 ## 自己构建
 
 ```bash
-npm run dist
+npm run dist       # 编译 + 打包，产物在 app/build/
+npm run release    # 建 tag/Release、上传 asset、校验 digest
 ```
 
 需要 Node.js 18+、Go 1.27+ 和 NSIS 3.x。工具链不在默认位置时可用 `GO_BIN`、`GOPATH_DIR`、`NSIS_MAKENSIS` 指定。产物在 `app/build/Hands-off-Dashboard-Setup-<版本>.exe`。
+
+`npm run release` 会从 `package.json` 读版本号，用 `git credential` 里保存的 GitHub 凭据发布，命令行不出现明文 token。可加 `--dry-run` 只看步骤、`--build` 先构建、`--replace` 覆盖同名 asset、`--notes notes.md` 指定 Release 说明。重复执行是安全的：Release 已存在就复用，asset 内容一致就跳过上传。
 
 ## 目录
 
@@ -111,6 +114,7 @@ app/                Windows 桌面宿主（Go + 系统 WebView2）
   state.go          配置与状态持久化
   installer.nsi     一键安装包脚本
 scripts/build.js    编译 → WebView2 引导程序 → NSIS 打包
+scripts/release.js  建 tag/Release → 上传 asset → 校验 digest
 examples/           三个虚构项目，首次启动的示例数据
 assets/             图标
 docs/               预览图

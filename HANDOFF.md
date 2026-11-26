@@ -116,6 +116,15 @@ Last-Activity: 2026-11-27
 - 匿名下载直链校验：4,765,051 字节，SHA256 `e6fa0cb619b29d8ca278441463316c09b98b2f0f17c1f6a0addd8b8276a86d5e`，与本地完全一致。README 里的 v1.1.0 直链现在可用。
 - 坑：`api.github.com` 用 PowerShell 的 `Invoke-RestMethod` 会返回 403（拿不到 UA/凭据），换成 `D:\2Enviroment\Git\mingw64\bin\curl.exe` 加 `User-Agent` 头就正常。
 
+### 发布脚本（2026-11-27）
+
+- 新增 `scripts/release.js`（`npm run release`），把这次手工做的发布流程固化下来：从 `package.json` 读版本 → 校验 `app/build/` 里安装包存在（`--build` 可代跑 `npm run dist`）→ 算本地 SHA256 → 找同名 tag 的 Release（不存在就建，`target_commitish` 取当前分支）→ 上传 asset 到 `uploads.github.com` → 比对服务端 `digest` 与复查 asset 大小。
+- 幂等设计：Release 已存在就复用；asset 大小和 digest 都与本地一致时跳过上传。内容不一致默认报错，加 `--replace` 才删旧的重传——避免误覆盖已经被人下载过的包。
+- 凭据只从 `git credential fill` 读（`GITHUB_TOKEN` / `GH_TOKEN` 可覆盖），脚本、参数、日志里都不出现明文 token。仓库坐标从 `remote.origin.url` 解析，也支持 `GITHUB_REPO` 覆盖。
+- `--dry-run` 只打印将要执行的三步，实测正常；在已有 v1.1.0 的状态下实跑一次，正确走了「复用 Release + 跳过上传」分支，没有产生任何远端改动。
+- 已知边界：脚本不校验 tag 是否真的指向 `main` 的最新提交（GitHub 建 tag 时用的是 `target_commitish`，如果远端分支落后则 tag 会打在旧 commit 上）。发版前确认 `git push` 已经成功。
+
+
 ### 构建环境与坑（本机）
 
 - 本机没有 Go 与 NSIS，也不在 PATH 里。这次把工具链下到 `.toolchain/`（已被 .gitignore 忽略）：Go 1.27.4 来自 `mirrors.aliyun.com/golang/`，NSIS 3.04 来自 `cdn.npmmirror.com/binaries/electron-builder-binaries/nsis-3.0.4.1/nsis-3.0.4.1.7z`（用 `tar.exe -xf` 解，本机没有 7-Zip）。SourceForge 与 `go.dev` 直连都不通，`golang.google.cn` 会 302 到拿不到的 dl.google.com。

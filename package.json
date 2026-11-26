@@ -4,7 +4,8 @@
   "private": true,
   "description": "把每个项目的 HANDOFF.md 变成桌面上的一张卡片",
   "scripts": {
-    "dist": "node scripts/build.js"
+    "dist": "node scripts/build.js",
+    "release": "node scripts/release.js"
   },
   "engines": {
     "node": ">=18"
