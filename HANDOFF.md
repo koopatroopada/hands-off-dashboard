@@ -2,11 +2,11 @@ Audience: 我自己（单机自用的项目交接看板 + 常驻桌面组件）�
 Why: 同时维护多个项目，每个项目结束会话时留一份 HANDOFF.md，想要一个常驻桌面、一眼看清各项目进度和下一步的看板
 Stages: 网页看板 → 桌面组件 → 数据源统一 → 安装包分发 → 日常常驻
 Current: 日常常驻
-Evidence: GitHub Release v1.1.0 已发布，asset 4,765,051 字节，匿名下载校验 SHA256 e6fa0cb6…86a86d5e 与本地一致；tag v1.1.0 指向 main 的 af4bb6e，源码与安装包同源；静默安装验证通过，新 UI 的看板 / 方格两视图、置顶同步、全文抽屉在真机宿主里跑通
+Evidence: GitHub Release v1.1.0 已发布，asset 4,765,051 字节，匿名下载校验 SHA256 e6fa0cb6…86a86d5e 与本地一致；tag v1.1.0 指向含全部改动的 main，源码与安装包同源；静默安装验证通过，新 UI 的看板 / 方格两视图、置顶同步、全文抽屉在真机宿主里跑通；仓库已补 MIT LICENSE
 Gate: 连续一周开机自启都正常显示卡片，且至少一位外部用户不看 README 也能独立装好
-Blocker: 还没有外部用户实际安装过；仓库没有 LICENSE
+Blocker: 还没有外部用户实际安装过
 Next-Determined: DETERMINED
-Next: 把 v1.1.0 的 Release 链接交给第一位外部用户试用（不看 README 只给链接，确认能独立装好），同时补 MIT LICENSE
+Next: 把 v1.1.0 的 Release 链接交给第一位外部用户试用（不看 README 只给链接，确认能独立装好）
 Created: 2026-11-03
 Last-Activity: 2026-11-27
 
@@ -129,11 +129,10 @@ Last-Activity: 2026-11-27
 ## Next steps
 
 1. **找第一位外部用户试用**：把 <https://github.com/koopatroopada/hands-off-dashboard/releases/download/v1.1.0/Hands-off-Dashboard-Setup-1.1.0.exe> 发过去，不看 README、只给链接，确认能独立双击装好并看到卡片。
-2. **补 LICENSE**：现在没有许可证等于默认保留所有权利，和对外推广的口径不一致。MIT 最省事。
-3. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
-4. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
-5. **把 `.git` 放回工作区**：现在源码改动要先在 `D:\1Projects\hands-off-dashboard-repo` 提交推送，工作区目录本身没有版本控制，容易两处漂移。
-6. 收尾小事：`ui` / `workbuddy/main-622ca596` 两条旧分支可以删；本地 `dist/`、`demo/` 是历史残留，被 .gitignore 挡着；`index.v1.0.0.html.bak` 确认新版稳定后可以删。
+2. **吊销那个 PAT**：`ghp_...` 在会话里明文出现过（本次发布又用了一次），去 GitHub Settings → Developer settings 删掉换新的。
+3. **日常常驻观察**：开机自启连跑一周，确认 Win+D、热键、重启后位置记忆都稳定。
+4. **把 `.git` 放回工作区**：现在源码改动要先在 `D:\1Projects\hands-off-dashboard-repo` 提交推送，工作区目录本身没有版本控制，容易两处漂移。
+5. 收尾小事：`ui` / `workbuddy/main-622ca596` 两条旧分支可以删；本地 `dist/`、`demo/` 是历史残留，被 .gitignore 挡着；`index.v1.0.0.html.bak` 确认新版稳定后可以删。
 
 ## Relevant artifacts
 
